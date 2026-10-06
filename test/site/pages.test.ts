@@ -62,8 +62,18 @@ test('pricing: $72 a year preselected wording, $8 monthly, local currency note, 
 
 const NOINDEX = ['404.html', 'thanks.html']
 
+test('"Unlimited" is fair use with the server\'s caps written out, and the price says tax comes on top', () => {
+  const html = read('index.html')
+  expect(html).toContain('<li>Unlimited reports, fair use</li>')
+  expect(html).toContain('Prices exclude sales tax and VAT, which are added at checkout where they apply.')
+  const terms = read('terms.html')
+  for (const s of ['Unlimited reports means fair use', '50 publishes a day', '20 versions of one client and month', '100 MB of stored reports']) {
+    expect(terms, s).toContain(s)
+  }
+})
 test('legal pages carry the date and the facts the spec fixes', () => {
-  for (const p of ['terms.html', 'privacy.html', 'refunds.html']) expect(read(p), p).toContain('Last updated: 5 October 2026')
+  const updated: Record<string, string> = { 'terms.html': '6 October 2026', 'privacy.html': '5 October 2026', 'refunds.html': '5 October 2026' }
+  for (const [p, d] of Object.entries(updated)) expect(read(p), p).toContain(`Last updated: ${d}`)
   const terms = read('terms.html')
   for (const s of ['ChuKhaLi, an individual developer', 'Dodo Payments is the merchant of record', 'FSL-1.1-MIT', 'laws of Vietnam', 'stays online for 2 years']) expect(terms, s).toContain(s)
   const privacy = read('privacy.html')
