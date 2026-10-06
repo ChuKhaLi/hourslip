@@ -1,0 +1,19 @@
+// Cloudflare Workers static assets for hourslip.dev. No Worker script: Cloudflare serves site/ as it
+// is. Deployed from a checkout with `cf deploy` (docs/checklists/site.md). The apex and www are custom
+// domains; a zone redirect rule sends www to the apex. No workers.dev or preview URL, so the site
+// has one address.
+{
+  "name": "hourslip-site",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [
+    { "pattern": "hourslip.dev", "custom_domain": true },
+    { "pattern": "www.hourslip.dev", "custom_domain": true }
+  ],
+  "assets": {
+    "directory": "./site",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "name": "hourslip",
+  "owner": { "name": "ChuKhaLi" },
+  "plugins": [{ "name": "hourslip", "source": "./plugin", "description": "Billable hours from your Claude Code sessions, per client and ticket." }]
+}

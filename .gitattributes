@@ -1,0 +1,3 @@
+site/sample.html text eol=lf
+site/_headers text eol=lf
+scripts/*.mjs text eol=lf

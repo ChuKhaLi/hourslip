@@ -1,0 +1,24 @@
+# hourslip
+
+> hourslip is a Claude Code mod that keeps a timesheet per client and ticket while you work. It attributes time to a client by the folder you are in and to a ticket by the git branch, shows today's time in the status line, and exports CSV files and a printable report. Pro (coming soon) publishes a report link your client can open and confirm.
+
+## What it records
+
+- When prompts and turns start and end, the working folder and the git branch. Never prompt text, never file contents. Data stays in ~/.hourslip until the user presses Publish.
+- Hours are a lower bound: only time in Claude Code with the mod loaded, plus time the user adds by hand, which the report labels.
+
+## Confirm
+
+- A client can type a name and confirm a published report. hourslip does not verify who confirms: anyone with the link can.
+
+## Install
+
+    claude plugin marketplace add ChuKhaLi/hourslip
+    claude plugin install hourslip@hourslip
+
+## Links
+
+- Sample report: https://hourslip.dev/sample
+- Terms: https://hourslip.dev/terms
+- Privacy: https://hourslip.dev/privacy
+- Source: https://github.com/ChuKhaLi/hourslip

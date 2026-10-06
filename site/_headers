@@ -1,0 +1,25 @@
+/*
+  Content-Security-Policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/style.v1.css
+  Cache-Control: public, max-age=31536000, immutable
+
+/llms.txt
+  Content-Type: text/plain; charset=utf-8
+
+/thanks
+  X-Robots-Tag: noindex
+  Cache-Control: no-store
+
+# BEGIN sample (written by scripts/build-site.mjs)
+/sample
+  ! Content-Security-Policy
+  Content-Security-Policy: default-src 'none'; style-src 'sha256-6fkGehztjQQx8ZKfme3CXxivgvpOtMgyNfeNeDYs+EQ='; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+# END sample

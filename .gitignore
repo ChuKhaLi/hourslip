@@ -1,0 +1,7 @@
+node_modules/
+plugin/.claude-plugin/types/
+plugin/.claude/
+*.log
+plugin/tsconfig.json
+docs/superpowers/reports/local/
+.superpowers/
