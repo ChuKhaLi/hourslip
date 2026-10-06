@@ -1,12 +1,12 @@
-// Runs Claude Code's own plugin tooling over plugin/. Not part of `pnpm test`: it needs a `claude`
-// with function hooks. A missing `claude plugin test` is a failure, never a skip.
+// Runs Claude Code's own plugin tooling over plugin/. Not part of `pnpm test`.
+// A missing `claude plugin test` is a failure, never a skip.
 import { spawnSync } from 'node:child_process'
 import { createRequire } from 'node:module'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const plugin = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'plugin')
-const env = { ...process.env, CLAUDE_CODE_ENABLE_FUNCTION_HOOKS: '1' }
+const env = process.env
 const run = (cmd, args, capture = false) =>
   spawnSync(cmd, args, { cwd: plugin, env, encoding: 'utf8', stdio: capture ? 'pipe' : 'inherit', shell: process.platform === 'win32' })
 const fail = (m, d = '') => { console.error(`test:mod: ${m}${d ? `\n${d}` : ''}`); process.exit(1) }

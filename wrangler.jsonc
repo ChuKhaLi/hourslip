@@ -1,5 +1,6 @@
 // Cloudflare Workers static assets for hourslip.dev. No Worker script: Cloudflare serves site/ as it
-// is. Deployed from a checkout with `cf deploy` (docs/checklists/site.md). The apex and www are custom
+// is. Workers Builds runs the tests and `wrangler deploy` on every push to main (docs/checklists/site.md);
+// `npx wrangler deploy` from a checkout does the same by hand. The apex and www are custom
 // domains; a zone redirect rule sends www to the apex. No workers.dev or preview URL, so the site
 // has one address.
 {

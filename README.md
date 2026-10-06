@@ -15,7 +15,7 @@ Measured from Claude Code activity. Time outside Claude Code, such as meetings o
     claude plugin marketplace add ChuKhaLi/hourslip
     claude plugin install hourslip@hourslip
 
-Mods need function hooks enabled in your Claude Code build.
+Mods are on by default in current Claude Code (checked on 2.1.291); nothing to enable.
 
 ## First setup
 
@@ -113,8 +113,6 @@ or file contents. Nothing leaves your machine.
 - Commit titles appear only on the CLI (they are read with `git` through `process.run`). Elsewhere,
   such as the desktop app, the report says they are unavailable.
 - Checked only on Windows. macOS and Linux have not been checked.
-- Mods need function hooks on. To run `claude plugin test` or `claude plugin validate` yourself, set
-  `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`.
 - A session's event file is rewritten whole after each event. The engine's declaration for `$.fs`
   says: "A read or write over 4 MiB rejects" and, for read, "Rejects when missing, or over 4 MiB". A
   session file past 4 MiB therefore cannot be read back (after a reload, or by the pane and export),
@@ -131,7 +129,7 @@ or file contents. Nothing leaves your machine.
 `plugin/.claude-plugin/types/` when it loads the plugin. Lay them once on a fresh checkout, from the
 repository root (no model call; it prints `hourslip: hourslip is loaded.`):
 
-    CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude -p --plugin-dir ./plugin "/hourslip"
+    claude -p --plugin-dir ./plugin "/hourslip"
 
 ## License
 
