@@ -13,7 +13,7 @@ import { commitsFor } from './git.ts'
 import { homeDir, type CommandEngine, type PaneEngine } from './paths.ts'
 import type { Recorder } from './recorder.ts'
 
-const VERSION = '0.1.0'
+const VERSION = '0.1.1'
 
 async function context($: PaneEngine | CommandEngine, strict = false) {
   const home = await homeDir($)

@@ -21,5 +21,5 @@
 # BEGIN sample (written by scripts/build-site.mjs)
 /sample
   ! Content-Security-Policy
-  Content-Security-Policy: default-src 'none'; style-src 'sha256-6fkGehztjQQx8ZKfme3CXxivgvpOtMgyNfeNeDYs+EQ='; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'none'; style-src 'sha256-tH/DfJei5RLn+GGLo8TSZWFlvWnYnIevo3SBpzeNtEo='; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
 # END sample

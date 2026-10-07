@@ -20,6 +20,8 @@ test('no page, no sample and no report promises more than the product does', () 
   for (const p of PAGES) expect(hits(read(p)), p).toEqual([])
   expect(hits(sampleHtml())).toEqual([])
   expect(hits(renderReport(SAMPLE_SNAPSHOT, { confirm: { kind: 'sample' } }))).toEqual([])
+  expect(hits(renderReport(SAMPLE_SNAPSHOT, { confirm: { kind: 'form', action: '/r/x/approve' } }))).toEqual([])
+  expect(hits(renderReport(SAMPLE_SNAPSHOT, { confirm: { kind: 'confirmed', name: 'Jane', at: '2026-10-07 14:03 UTC' }, newer: 'https://r.hourslip.dev/r/y' }))).toEqual([])
   expect(hits(read('llms.txt'))).toEqual([])
 })
 test('the honesty line and the confirm note stand where a reader meets the claim', () => {

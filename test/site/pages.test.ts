@@ -72,7 +72,7 @@ test('"Unlimited" is fair use with the server\'s caps written out, and the price
   }
 })
 test('legal pages carry the date and the facts the spec fixes', () => {
-  const updated: Record<string, string> = { 'terms.html': '6 October 2026', 'privacy.html': '5 October 2026', 'refunds.html': '5 October 2026' }
+  const updated: Record<string, string> = { 'terms.html': '6 October 2026', 'privacy.html': '7 October 2026', 'refunds.html': '5 October 2026' }
   for (const [p, d] of Object.entries(updated)) expect(read(p), p).toContain(`Last updated: ${d}`)
   const terms = read('terms.html')
   for (const s of ['ChuKhaLi, an individual developer', 'Dodo Payments is the merchant of record', 'FSL-1.1-MIT', 'laws of Vietnam', 'stays online for 2 years']) expect(terms, s).toContain(s)
@@ -80,7 +80,7 @@ test('legal pages carry the date and the facts the spec fixes', () => {
   for (const s of ["Your IP address is used in memory by hourslip's server to limit free keys, and hourslip's server never stores it.",
     "hourslip.dev is served by Cloudflare, which processes visitors' IP addresses to deliver the site.",
     'hosting provider in Singapore', 'kept for 30 days', 'transferred outside it', 'never records prompt text or file contents',
-    '/hourslip unpublish', 'within 30 days', 'sets no cookies, runs no analytics']) expect(privacy, s).toContain(s)
+    '/hourslip unpublish', 'within 30 days', 'sets no cookies, runs no analytics', 'Report links (r.hourslip.dev) are served through Cloudflare']) expect(privacy, s).toContain(s)
   const refunds = read('refunds.html')
   for (const s of ['within 14 days of your first payment', 'each yearly renewal', 'Monthly renewals are not refunded']) expect(refunds, s).toContain(s)
   expect(read('contact.html')).toContain('within 2 business days')

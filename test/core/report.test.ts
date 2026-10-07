@@ -87,4 +87,27 @@ describe('report', () => {
   test('an optional banner renders escaped at the top', () => {
     expect(renderReport(snap, { banner: '<b>Preview</b>' })).toContain('&lt;b&gt;Preview&lt;/b&gt;')
   })
+  test('the live form posts the name to the given action, with the note beside it', () => {
+    const html = renderReport(snap, { confirm: { kind: 'form', action: '/r/abc/approve' } })
+    expect(html).toContain('<form method="post" action="/r/abc/approve">')
+    expect(html).toContain('name="name"')
+    expect(html).toContain('maxlength="100"')
+    expect(html).toContain(CONFIRM_NOTE)
+    expect(html).not.toContain('<script')
+  })
+  test('the confirmed state names the link holder, escaped, with the note beside it', () => {
+    const html = renderReport(snap, { confirm: { kind: 'confirmed', name: evil, at: '2026-10-07 14:03 UTC' } })
+    expect(html).toContain('Confirmed by &lt;script&gt;')
+    expect(html).toContain('(link holder) at 2026-10-07 14:03 UTC')
+    expect(html).toContain(CONFIRM_NOTE)
+    expect(html).not.toContain('<form')
+  })
+  test('an older version links to the newest one', () => {
+    const html = renderReport(snap, { newer: 'https://r.hourslip.dev/r/"x' })
+    expect(html).toContain('A newer version of this report exists.')
+    expect(html).toContain('href="https://r.hourslip.dev/r/&quot;x"')
+  })
+  test('without confirm there is no confirm section', () => {
+    expect(renderReport(snap)).not.toContain('class="confirm"')
+  })
 })

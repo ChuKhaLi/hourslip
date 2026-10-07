@@ -6,8 +6,8 @@ export const HONESTY_LINE = 'Measured from Claude Code activity. Time outside Cl
 /** Stands next to every Confirm (parent spec §6.3, §10). */
 export const CONFIRM_NOTE = 'hourslip does not verify who confirms: anyone with this link can.'
 
-/** What the report shows where a client confirms. C1 has only the sample; C2 adds the live form and the confirmed state. */
-export type ConfirmView = { kind: 'sample' }
+/** What the report shows where a client confirms: the site's sample, the live form, or who confirmed. */
+export type ConfirmView = { kind: 'sample' } | { kind: 'form'; action: string } | { kind: 'confirmed'; name: string; at: string }
 
 export function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
@@ -33,19 +33,24 @@ th{font-weight:600}td.n,th.n{text-align:right;font-family:ui-monospace,Consolas,
 ul{margin:4px 0 0;padding-left:18px}.totals{font-size:19px}
 .confirm{margin-top:30px;border-top:1px solid var(--rule)}
 .button{display:inline-block;border:1px solid var(--ink);padding:8px 14px;font:600 14px ui-monospace,Consolas,monospace}
+button.button{background:none;color:var(--ink);cursor:pointer}input{font:inherit;padding:6px 8px;border:1px solid var(--rule);background:var(--sheet);color:var(--ink);width:100%;max-width:320px}
 footer{margin-top:40px;font-size:13px}
 @media (max-width:560px){main{margin:0;padding:20px 16px;border:0}}
-@media print{:root{--paper:#ffffff;--sheet:#ffffff;--ink:#000000;--muted:#333333;--rule:#999999;--accent:#000000;--warn:#000000}.banner,.confirm .button{display:none}main{margin:0;border:0;padding:0}}`
+@media print{:root{--paper:#ffffff;--sheet:#ffffff;--ink:#000000;--muted:#333333;--rule:#999999;--accent:#000000;--warn:#000000}.banner,.confirm .button,.confirm form{display:none}main{margin:0;border:0;padding:0}}`
 
 function confirmBlock(c: ConfirmView | undefined): string {
-  if (c?.kind !== 'sample') return ''
-  return `<section class="confirm"><h2>Confirm these hours</h2><p>On a published report, whoever holds the link can type a name here and confirm.</p><p><span class="button" aria-disabled="true">Confirm these hours</span></p><p class="muted">${e(CONFIRM_NOTE)}</p></section>`
+  const note = `<p class="muted">${e(CONFIRM_NOTE)}</p>`
+  if (c?.kind === 'sample') return `<section class="confirm"><h2>Confirm these hours</h2><p>On a published report, whoever holds the link can type a name here and confirm.</p><p><span class="button" aria-disabled="true">Confirm these hours</span></p>${note}</section>`
+  if (c?.kind === 'form') return `<section class="confirm"><h2>Confirm these hours</h2><form method="post" action="${e(c.action)}"><p><label for="name">Your name</label><br><input id="name" name="name" required maxlength="100" autocomplete="name"></p><p><button class="button" type="submit">Confirm these hours</button></p></form>${note}</section>`
+  if (c?.kind === 'confirmed') return `<section class="confirm"><h2>Confirmed</h2><p>Confirmed by ${e(c.name)} (link holder) at ${e(c.at)}.</p>${note}</section>`
+  return ''
 }
 
-export function renderReport(s: Snapshot, opts: { banner?: string | string[]; confirm?: ConfirmView } = {}): string {
+export function renderReport(s: Snapshot, opts: { banner?: string | string[]; confirm?: ConfirmView; newer?: string } = {}): string {
   const t = s.totals
   const lines = opts.banner === undefined ? [] : [opts.banner].flat().filter(Boolean)
-  const banner = lines.length ? `<div class="banner">${lines.map(l => `<div>${e(l)}</div>`).join('')}</div>` : ''
+  const newer = opts.newer ? `<div class="banner">A newer version of this report exists. <a href="${e(opts.newer)}">Open the newest version</a>.</div>` : ''
+  const banner = newer + (lines.length ? `<div class="banner">${lines.map(l => `<div>${e(l)}</div>`).join('')}</div>` : '')
   const billable = t.presenceMinutes + t.manualMinutes
   const days = s.days.map(d => `<tr><td>${e(d.date)}</td><td class="n">${formatMinutes(d.presenceMinutes)}</td><td class="n">${formatMinutes(d.manualMinutes)}</td><td class="n">${formatMinutes(d.claudeMinutes)}</td><td>${d.overlap ? '<span class="warn">overlapping clients</span>' : ''}${d.capped ? ' <span class="warn">capped at 12h</span>' : ''}</td></tr>`).join('')
   const tickets = s.tickets.map(k => `<tr><td>${k.ticket === null ? '<span class="muted">No ticket</span>' : e(k.ticket)}${k.branches.length ? `<div class="muted">${k.branches.map(e).join(', ')}</div>` : ''}${k.commits.length ? `<ul>${k.commits.map(c => `<li>${e(c)}</li>`).join('')}</ul>` : ''}</td><td class="n">${formatMinutes(k.presenceMinutes)}</td><td class="n">${formatMinutes(k.claudeMinutes)}</td></tr>`).join('')
