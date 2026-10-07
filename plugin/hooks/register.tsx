@@ -12,12 +12,14 @@ export const register: Register = on => {
   on('command.run', { command: 'hourslip' }, async ($, e) => {
     try {
       const { text, openPane } = await runCommand({
-        env: { hourslipHome: () => $.env.get('HOURSLIP_HOME'), home: () => $.env.get('HOME'), userProfile: () => $.env.get('USERPROFILE') },
+        env: { hourslipHome: () => $.env.get('HOURSLIP_HOME'), home: () => $.env.get('HOME'), userProfile: () => $.env.get('USERPROFILE'), server: () => $.env.get('HOURSLIP_SERVER'), os: () => $.env.get('OS') },
         session: { id: () => $.session.id(), cwd: () => $.session.cwd(), repo: () => $.session.repo() },
         fs: { read: p => $.fs.read(p), write: (p, t) => $.fs.write(p, t), exists: p => $.fs.exists(p), list: p => $.fs.list(p) },
         clock: { now: () => $.clock.now() },
-        ui: { status: t => $.ui.status(t), toast: t => $.ui.toast(t) },
+        ui: { status: t => $.ui.status(t), toast: t => $.ui.toast(t), copy: async t => (await $.ui.copy({ text: t })).isCopied === true },
         process: { run: (argv, init) => $.process.run(argv, init) },
+        http: { fetch: (u, i) => $.http.fetch(u, i) },
+        store: { get: k => $.store.get(k), set: (k, v) => $.store.set(k, v), delete: k => $.store.delete(k) },
       }, recorder, e.args)
       if (openPane) {
         await update($, pane, () => ({ lines: text.split('\n') }))
@@ -31,6 +33,6 @@ export const register: Register = on => {
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const { Box, Text } = $.ui.resolve(e)
     const { lines } = await read($, pane)
-    return <Box flexDirection="column">{lines.map((l, i) => <Text key={`l${i}`} dimColor={l.startsWith('Week of')}>{l}</Text>)}</Box>
+    return <Box flexDirection="column">{lines.map((l, i) => <Text key={`l${i}`} dimColor={l.startsWith('Week of') || l === 'Published'}>{l}</Text>)}</Box>
   })
 }

@@ -1,6 +1,6 @@
 # hourslip
 
-> hourslip is a Claude Code mod that keeps a timesheet per client and ticket while you work. It attributes time to a client by the folder you are in and to a ticket by the git branch, shows today's time in the status line, and exports CSV files and a printable report. Pro (coming soon) publishes a report link your client can open and confirm.
+> hourslip is a Claude Code mod that keeps a timesheet per client and ticket while you work. It attributes time to a client by the folder you are in and to a ticket by the git branch, shows today's time in the status line, and exports CSV files and a printable report. Pro publishes a report link your client can open and confirm.
 
 ## What it records
 

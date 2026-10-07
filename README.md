@@ -33,8 +33,18 @@ Usage:
   /hourslip add <1h30> <client> "<note>" [--date YYYY-MM-DD] [--ticket X]
   /hourslip client add <id> "<name>" --path <glob> [--path <glob>] [--rate <amount> <CUR>]
   /hourslip export [client] [YYYY-MM]
+  /hourslip publish <client> [YYYY-MM] [--no-commits]   preview a report; add --confirm to publish it
+  /hourslip unpublish <client> <YYYY-MM>     delete a published report (its link answers 410)
+  /hourslip subscribe [--monthly]            buy Pro (yearly unless --monthly)
+  /hourslip portal                           manage or cancel Pro
+  /hourslip key | key show | key set <key> | key forget
   /hourslip tz                                the timezone offset hourslip records
 ```
+
+`publish` shows a preview of the report (what it contains, how many hours) and sends nothing. Add `--confirm` to
+publish it: you get a link to send, copied to your clipboard. The first two reports are free, no card; after that
+`subscribe` opens a checkout page for Pro. The pane lists your reports under Published; `unpublish` deletes one,
+and its link then answers 410.
 
 `export` writes `hourslip-<client or all>-<month>-days.csv` and `-tickets.csv` into `~/.hourslip/exports/`. With a
 client it also writes an HTML preview of the client report, with commit titles per ticket when

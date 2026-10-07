@@ -7,6 +7,14 @@ export type Command =
   | { kind: 'add'; minutes: number; client: string; note: string; date: string | null; ticket: string | null }
   | { kind: 'client-add'; id: string; name: string; paths: string[]; rate: { amount: number; currency: string } | null }
   | { kind: 'export'; client: string | null; month: string | null }
+  | { kind: 'publish'; client: string; month: string | null; confirm: boolean; showCommits: boolean }
+  | { kind: 'unpublish'; client: string; month: string }
+  | { kind: 'subscribe'; plan: 'yearly' | 'monthly' }
+  | { kind: 'portal' }
+  | { kind: 'key' }
+  | { kind: 'key-show' }
+  | { kind: 'key-set'; key: string }
+  | { kind: 'key-forget' }
   | { kind: 'error'; message: string }
 
 export const USAGE = [
@@ -16,6 +24,11 @@ export const USAGE = [
   '  /hourslip add <1h30> <client> "<note>" [--date YYYY-MM-DD] [--ticket X]',
   '  /hourslip client add <id> "<name>" --path <glob> [--path <glob>] [--rate <amount> <CUR>]',
   '  /hourslip export [client] [YYYY-MM]',
+  '  /hourslip publish <client> [YYYY-MM] [--no-commits]   preview a report; add --confirm to publish it',
+  '  /hourslip unpublish <client> <YYYY-MM>     delete a published report (its link answers 410)',
+  '  /hourslip subscribe [--monthly]            buy Pro (yearly unless --monthly)',
+  '  /hourslip portal                           manage or cancel Pro',
+  '  /hourslip key | key show | key set <key> | key forget',
   '  /hourslip tz                                the timezone offset hourslip records',
 ].join('\n')
 
@@ -38,12 +51,14 @@ export function parseDuration(s: string): number | null {
 const MONTH = /^\d{4}-\d{2}$/
 const ID = /^[a-z0-9][a-z0-9-]*$/
 
+const BOOLEAN = new Set(['--session', '--confirm', '--no-commits', '--monthly'])
+
 function flags(tokens: string[]): { rest: string[]; opts: Map<string, string[]> } {
   const rest: string[] = []
   const opts = new Map<string, string[]>()
   for (let i = 0; i < tokens.length; i++) {
     const t = tokens[i]
-    if (t === '--session') opts.set('session', [])
+    if (BOOLEAN.has(t)) opts.set(t.slice(2), [])
     else if (t === '--rate') { opts.set('rate', [tokens[i + 1] ?? '', tokens[i + 2] ?? '']); i += 2 }
     else if (t.startsWith('--')) { const k = t.slice(2); opts.set(k, [...(opts.get(k) ?? []), tokens[i + 1] ?? '']); i++ }
     else rest.push(t)
@@ -97,6 +112,37 @@ export function parseCommand(args: string): Command {
     const client = nonEmpty.find(t => !MONTH.test(t)) ?? null
     if (month !== null && !isCalendarDate(`${month}-01`)) return err('Usage: /hourslip export [client] [YYYY-MM]')
     return { kind: 'export', client, month }
+  }
+  if (verb === 'publish') {
+    const usage = 'Usage: /hourslip publish <client> [YYYY-MM] [--no-commits] [--confirm]'
+    const bad = [...opts.keys()].find(k => k !== 'confirm' && k !== 'no-commits')
+    if (bad !== undefined) return err(`Unknown option --${bad}. publish takes --confirm and --no-commits.`)
+    if (rest.length < 1 || rest.length > 2 || !rest[0] || MONTH.test(rest[0])) return err(usage)
+    const month = rest[1] ?? null
+    if (month !== null && (!MONTH.test(month) || !isCalendarDate(`${month}-01`))) return err(usage)
+    return { kind: 'publish', client: rest[0], month, confirm: opts.has('confirm'), showCommits: !opts.has('no-commits') }
+  }
+  if (verb === 'unpublish') {
+    if (opts.size > 0) return err('Usage: /hourslip unpublish <client> <YYYY-MM> (no options)')
+    if (rest.length !== 2 || !rest[0] || !MONTH.test(rest[1]) || !isCalendarDate(`${rest[1]}-01`)) return err('Usage: /hourslip unpublish <client> <YYYY-MM>')
+    return { kind: 'unpublish', client: rest[0], month: rest[1] }
+  }
+  if (verb === 'subscribe') {
+    if ([...opts.keys()].some(k => k !== 'monthly') || rest.length > 0) return err('Usage: /hourslip subscribe [--monthly]')
+    return { kind: 'subscribe', plan: opts.has('monthly') ? 'monthly' : 'yearly' }
+  }
+  if (verb === 'portal') {
+    if (opts.size > 0 || rest.length > 0) return err('Usage: /hourslip portal (no options)')
+    return { kind: 'portal' }
+  }
+  if (verb === 'key') {
+    const usage = 'Usage: /hourslip key | /hourslip key show | /hourslip key set <key> | /hourslip key forget'
+    if (opts.size > 0) return err(usage)
+    if (rest.length === 0) return { kind: 'key' }
+    if (rest[0] === 'forget' && rest.length === 1) return { kind: 'key-forget' }
+    if (rest[0] === 'show' && rest.length === 1) return { kind: 'key-show' }
+    if (rest[0] === 'set' && rest.length === 2 && rest[1]) return { kind: 'key-set', key: rest[1] }
+    return err(usage)
   }
   return err(USAGE)
 }

@@ -2,15 +2,9 @@ import { expect, test } from 'vitest'
 import { CONFIRM_NOTE, HONESTY_LINE, renderReport } from '../../plugin/hooks/core/report.ts'
 import { sampleHtml } from '../../scripts/build-site.mjs'
 import { SAMPLE_SNAPSHOT } from '../../scripts/site/sample-snapshot.ts'
+import { FORBIDDEN } from '../helpers/forbidden.ts'
 import { PAGES, read } from './pages.ts'
 
-// Parent spec §10 and C1 spec §4: a confirmation is never a signature, an approval or proof of payment,
-// and hours are never clock records.
-export const FORBIDDEN: [string, RegExp][] = [
-  ['verified approval', /verified approval/i], ['signature', /\bsignature\b/i], ['signed by', /\bsigned by\b/i],
-  ['clock in', /\bclock[- ]?in\b/i], ['clock out', /\bclock[- ]?out\b/i], ['proof of payment', /proof of payment/i],
-  ['approved by', /\bapproved by\b/i],
-]
 const hits = (text: string) => FORBIDDEN.filter(([, re]) => re.test(text)).map(([label]) => label)
 
 test('the scan catches a planted phrase', () => {

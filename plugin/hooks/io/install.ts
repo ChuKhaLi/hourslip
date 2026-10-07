@@ -13,14 +13,14 @@ export function installRecorder(on: On, recorder: Recorder): void {
     const result = await next(e)
     try { await $.command.register({ name: 'hourslip', description: 'hourslip: billable hours per client and ticket' }) } catch { /* never block */ }
     await recorder.record({
-      env: { hourslipHome: () => $.env.get('HOURSLIP_HOME'), home: () => $.env.get('HOME'), userProfile: () => $.env.get('USERPROFILE') },
+      env: { hourslipHome: () => $.env.get('HOURSLIP_HOME'), home: () => $.env.get('HOME'), userProfile: () => $.env.get('USERPROFILE'), server: () => $.env.get('HOURSLIP_SERVER'), os: () => $.env.get('OS') },
       session: { id: () => $.session.id(), cwd: () => $.session.cwd(), repo: () => $.session.repo() },
       fs: { read: p => $.fs.read(p), write: (p, t) => $.fs.write(p, t), exists: p => $.fs.exists(p) },
       clock: { now: () => $.clock.now() },
-      ui: { status: t => $.ui.status(t), toast: t => $.ui.toast(t) },
+      ui: { status: t => $.ui.status(t), toast: t => $.ui.toast(t), copy: async t => (await $.ui.copy({ text: t })).isCopied === true },
     }, 'start')
     await refreshStatus({
-      env: { hourslipHome: () => $.env.get('HOURSLIP_HOME'), home: () => $.env.get('HOME'), userProfile: () => $.env.get('USERPROFILE') },
+      env: { hourslipHome: () => $.env.get('HOURSLIP_HOME'), home: () => $.env.get('HOME'), userProfile: () => $.env.get('USERPROFILE'), server: () => $.env.get('HOURSLIP_SERVER'), os: () => $.env.get('OS') },
       session: { id: () => $.session.id(), cwd: () => $.session.cwd(), repo: () => $.session.repo() },
       fs: { read: p => $.fs.read(p), list: p => $.fs.list(p) },
       clock: { now: () => $.clock.now() },
@@ -31,14 +31,14 @@ export function installRecorder(on: On, recorder: Recorder): void {
   on('prompt.submit', async ($, e, next) => {
     const result = await next(e)
     await recorder.record({
-      env: { hourslipHome: () => $.env.get('HOURSLIP_HOME'), home: () => $.env.get('HOME'), userProfile: () => $.env.get('USERPROFILE') },
+      env: { hourslipHome: () => $.env.get('HOURSLIP_HOME'), home: () => $.env.get('HOME'), userProfile: () => $.env.get('USERPROFILE'), server: () => $.env.get('HOURSLIP_SERVER'), os: () => $.env.get('OS') },
       session: { id: () => $.session.id(), cwd: () => $.session.cwd(), repo: () => $.session.repo() },
       fs: { read: p => $.fs.read(p), write: (p, t) => $.fs.write(p, t), exists: p => $.fs.exists(p) },
       clock: { now: () => $.clock.now() },
-      ui: { status: t => $.ui.status(t), toast: t => $.ui.toast(t) },
+      ui: { status: t => $.ui.status(t), toast: t => $.ui.toast(t), copy: async t => (await $.ui.copy({ text: t })).isCopied === true },
     }, 'prompt')
     await refreshStatus({
-      env: { hourslipHome: () => $.env.get('HOURSLIP_HOME'), home: () => $.env.get('HOME'), userProfile: () => $.env.get('USERPROFILE') },
+      env: { hourslipHome: () => $.env.get('HOURSLIP_HOME'), home: () => $.env.get('HOME'), userProfile: () => $.env.get('USERPROFILE'), server: () => $.env.get('HOURSLIP_SERVER'), os: () => $.env.get('OS') },
       session: { id: () => $.session.id(), cwd: () => $.session.cwd(), repo: () => $.session.repo() },
       fs: { read: p => $.fs.read(p), list: p => $.fs.list(p) },
       clock: { now: () => $.clock.now() },
@@ -49,14 +49,14 @@ export function installRecorder(on: On, recorder: Recorder): void {
   on('turn.start', async ($, e, next) => {
     const result = await next(e)
     await recorder.record({
-      env: { hourslipHome: () => $.env.get('HOURSLIP_HOME'), home: () => $.env.get('HOME'), userProfile: () => $.env.get('USERPROFILE') },
+      env: { hourslipHome: () => $.env.get('HOURSLIP_HOME'), home: () => $.env.get('HOME'), userProfile: () => $.env.get('USERPROFILE'), server: () => $.env.get('HOURSLIP_SERVER'), os: () => $.env.get('OS') },
       session: { id: () => $.session.id(), cwd: () => $.session.cwd(), repo: () => $.session.repo() },
       fs: { read: p => $.fs.read(p), write: (p, t) => $.fs.write(p, t), exists: p => $.fs.exists(p) },
       clock: { now: () => $.clock.now() },
-      ui: { status: t => $.ui.status(t), toast: t => $.ui.toast(t) },
+      ui: { status: t => $.ui.status(t), toast: t => $.ui.toast(t), copy: async t => (await $.ui.copy({ text: t })).isCopied === true },
     }, 'turn-start', { turn: e.turnId })
     await refreshStatus({
-      env: { hourslipHome: () => $.env.get('HOURSLIP_HOME'), home: () => $.env.get('HOME'), userProfile: () => $.env.get('USERPROFILE') },
+      env: { hourslipHome: () => $.env.get('HOURSLIP_HOME'), home: () => $.env.get('HOME'), userProfile: () => $.env.get('USERPROFILE'), server: () => $.env.get('HOURSLIP_SERVER'), os: () => $.env.get('OS') },
       session: { id: () => $.session.id(), cwd: () => $.session.cwd(), repo: () => $.session.repo() },
       fs: { read: p => $.fs.read(p), list: p => $.fs.list(p) },
       clock: { now: () => $.clock.now() },
@@ -67,14 +67,14 @@ export function installRecorder(on: On, recorder: Recorder): void {
   on('turn.complete', async ($, e, next) => {
     const result = await next(e)
     await recorder.record({
-      env: { hourslipHome: () => $.env.get('HOURSLIP_HOME'), home: () => $.env.get('HOME'), userProfile: () => $.env.get('USERPROFILE') },
+      env: { hourslipHome: () => $.env.get('HOURSLIP_HOME'), home: () => $.env.get('HOME'), userProfile: () => $.env.get('USERPROFILE'), server: () => $.env.get('HOURSLIP_SERVER'), os: () => $.env.get('OS') },
       session: { id: () => $.session.id(), cwd: () => $.session.cwd(), repo: () => $.session.repo() },
       fs: { read: p => $.fs.read(p), write: (p, t) => $.fs.write(p, t), exists: p => $.fs.exists(p) },
       clock: { now: () => $.clock.now() },
-      ui: { status: t => $.ui.status(t), toast: t => $.ui.toast(t) },
+      ui: { status: t => $.ui.status(t), toast: t => $.ui.toast(t), copy: async t => (await $.ui.copy({ text: t })).isCopied === true },
     }, 'turn-end', { turn: e.turnId, ...(e.agentId ? { agent: e.agentId } : {}) })
     await refreshStatus({
-      env: { hourslipHome: () => $.env.get('HOURSLIP_HOME'), home: () => $.env.get('HOME'), userProfile: () => $.env.get('USERPROFILE') },
+      env: { hourslipHome: () => $.env.get('HOURSLIP_HOME'), home: () => $.env.get('HOME'), userProfile: () => $.env.get('USERPROFILE'), server: () => $.env.get('HOURSLIP_SERVER'), os: () => $.env.get('OS') },
       session: { id: () => $.session.id(), cwd: () => $.session.cwd(), repo: () => $.session.repo() },
       fs: { read: p => $.fs.read(p), list: p => $.fs.list(p) },
       clock: { now: () => $.clock.now() },
@@ -85,11 +85,11 @@ export function installRecorder(on: On, recorder: Recorder): void {
   // Records before next(e): the session is gone afterwards and has only a short budget.
   on('session.end', async ($, e, next) => {
     await recorder.record({
-      env: { hourslipHome: () => $.env.get('HOURSLIP_HOME'), home: () => $.env.get('HOME'), userProfile: () => $.env.get('USERPROFILE') },
+      env: { hourslipHome: () => $.env.get('HOURSLIP_HOME'), home: () => $.env.get('HOME'), userProfile: () => $.env.get('USERPROFILE'), server: () => $.env.get('HOURSLIP_SERVER'), os: () => $.env.get('OS') },
       session: { id: () => $.session.id(), cwd: () => $.session.cwd(), repo: () => $.session.repo() },
       fs: { read: p => $.fs.read(p), write: (p, t) => $.fs.write(p, t), exists: p => $.fs.exists(p) },
       clock: { now: () => $.clock.now() },
-      ui: { status: t => $.ui.status(t), toast: t => $.ui.toast(t) },
+      ui: { status: t => $.ui.status(t), toast: t => $.ui.toast(t), copy: async t => (await $.ui.copy({ text: t })).isCopied === true },
     }, 'end')
     return next(e)
   })

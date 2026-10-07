@@ -53,11 +53,12 @@ test('the landing carries the honesty line, the install commands, what is never 
   for (const s of ['39h10', '14h05', '12h11', '8h32']) expect(read('sample.html')).toContain(s)
   for (const s of ['39h10', '14h05', '12h11', '8h32']) expect(html).toContain(s)
 })
-test('pricing: $72 a year preselected wording, $8 monthly, local currency note, Pro coming soon (until C3)', () => {
+test('pricing: $72 a year preselected wording, $8 monthly, local currency note', () => {
   const html = read('index.html')
-  for (const s of ['$72 a year', '$8 billed monthly', 'Charged in your local currency where available; a conversion fee may apply.', 'Pro is coming soon.', '/hourslip subscribe']) {
+  for (const s of ['$72 a year', '$8 billed monthly', 'Charged in your local currency where available; a conversion fee may apply.', '2 reports free, no card', '/hourslip subscribe']) {
     expect(html, s).toContain(s)
   }
+  for (const p of [...PAGES, 'sample.html', 'og.html', 'llms.txt']) expect(read(p), p).not.toMatch(/coming soon/i)
 })
 
 const NOINDEX = ['404.html', 'thanks.html']

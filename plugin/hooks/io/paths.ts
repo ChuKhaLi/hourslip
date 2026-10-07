@@ -7,11 +7,15 @@ import type { FsEntry, ProcessRunInit, ProcessRunResult, SessionRepo } from 'cla
  * (`Parameters<Parameters<On>[1]>[0]` collapses to never: On is overloaded and generic.)
  */
 /** One method per variable: `validate` wants a literal name in every `$.env.get`. */
-export type EnvPort = { hourslipHome(): Promise<string | undefined>; home(): Promise<string | undefined>; userProfile(): Promise<string | undefined> }
+export type EnvPort = { hourslipHome(): Promise<string | undefined>; home(): Promise<string | undefined>; userProfile(): Promise<string | undefined>; server(): Promise<string | undefined>; os(): Promise<string | undefined> }
 export type SessionPort = { id(): Promise<string>; cwd(): Promise<string>; repo(): Promise<SessionRepo | null> }
 export type ClockPort = { now(): Promise<number> }
-export type UiPort = { status(text: string | undefined): void; toast(text: string): void }
+export type UiPort = { status(text: string | undefined): void; toast(text: string): void; copy(text: string): Promise<boolean> }
 export type ProcessPort = { run(argv: readonly string[], init?: ProcessRunInit): Promise<ProcessRunResult> }
+export type HttpPort = { fetch(url: string, init?: { method?: string; headers?: Record<string, string>; body?: string }): Promise<{ status: number; ok: boolean; text: string }> }
+export type StorePort = { get(key: string): Promise<unknown>; set(key: string, value: unknown): Promise<void>; delete(key: string): Promise<void> }
+/** What the server client needs: the server URL from env, the network, and the store. */
+export type ServerEngine = { env: Pick<EnvPort, 'server'>; http: HttpPort; store: StorePort }
 
 export type HomeEngine = { env: EnvPort }
 export type ReadEngine = { fs: { read(path: string): Promise<string> } }
@@ -44,6 +48,9 @@ export type CommandEngine = RecorderEngine & {
   fs: { read(path: string): Promise<string>; write(path: string, text: string): Promise<void>; exists(path: string): Promise<boolean>; list(path: string): Promise<FsEntry[]> }
   process: ProcessPort
 }
+
+/** `/hourslip` with the paid tier: CommandEngine plus the network and the store. */
+export type PublishEngine = CommandEngine & { http: HttpPort; store: StorePort }
 
 const trim = (p: string) => p.replace(/\\/g, '/').replace(/\/+$/, '')
 

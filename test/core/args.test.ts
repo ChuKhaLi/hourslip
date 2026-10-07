@@ -60,3 +60,39 @@ test('csvName names the export files', () => {
   expect(csvName(null, '2026-10')).toBe('hourslip-all-2026-10')
   expect(csvName('acme', '2026-10')).toBe('hourslip-acme-2026-10')
 })
+
+describe('publishing verbs', () => {
+  test('publish', () => {
+    expect(parseCommand('publish acme')).toEqual({ kind: 'publish', client: 'acme', month: null, confirm: false, showCommits: true })
+    expect(parseCommand('publish acme 2026-10 --confirm --no-commits')).toEqual({ kind: 'publish', client: 'acme', month: '2026-10', confirm: true, showCommits: false })
+    expect(parseCommand('publish --confirm acme 2026-10')).toMatchObject({ confirm: true, client: 'acme', month: '2026-10' })
+    expect(parseCommand('publish')).toMatchObject({ kind: 'error' })
+    expect(parseCommand('publish acme 2026-13')).toMatchObject({ kind: 'error' })
+    expect(parseCommand('publish acme --yes')).toEqual({ kind: 'error', message: 'Unknown option --yes. publish takes --confirm and --no-commits.' })
+  })
+  test('subscribe, portal, unpublish, key', () => {
+    expect(parseCommand('subscribe')).toEqual({ kind: 'subscribe', plan: 'yearly' })
+    expect(parseCommand('subscribe --monthly')).toEqual({ kind: 'subscribe', plan: 'monthly' })
+    expect(parseCommand('portal')).toEqual({ kind: 'portal' })
+    expect(parseCommand('unpublish acme 2026-10')).toEqual({ kind: 'unpublish', client: 'acme', month: '2026-10' })
+    expect(parseCommand('unpublish acme')).toMatchObject({ kind: 'error' })
+    expect(parseCommand('key')).toEqual({ kind: 'key' })
+    expect(parseCommand('key set hs_abc')).toEqual({ kind: 'key-set', key: 'hs_abc' })
+    expect(parseCommand('key set')).toMatchObject({ kind: 'error' })
+    expect(parseCommand('key forget')).toEqual({ kind: 'key-forget' })
+  })
+  test('key show', () => {
+    expect(parseCommand('key show')).toEqual({ kind: 'key-show' })
+    expect(parseCommand('key show now')).toMatchObject({ kind: 'error' })
+  })
+  test('flag strictness: subscribe takes only --monthly; portal, key, unpublish take no flags or extra tokens', () => {
+    for (const bad of ['subscribe --yearly', 'subscribe --confirm', 'subscribe monthly', 'subscribe --monthly extra']) expect(parseCommand(bad), bad).toEqual({ kind: 'error', message: 'Usage: /hourslip subscribe [--monthly]' })
+    for (const bad of ['portal --x', 'portal now', 'portal --monthly']) expect(parseCommand(bad), bad).toMatchObject({ kind: 'error', message: expect.stringContaining('/hourslip portal') })
+    for (const bad of ['key --confirm', 'key forget --x', 'key show --x', 'key set hs_abc --x', 'key set hs_abc extra', 'key now']) expect(parseCommand(bad), bad).toMatchObject({ kind: 'error', message: expect.stringContaining('/hourslip key show') })
+    for (const bad of ['unpublish acme 2026-10 --confirm', 'unpublish acme 2026-10 --x y', 'unpublish acme 2026-10 extra']) expect(parseCommand(bad), bad).toMatchObject({ kind: 'error' })
+    expect(parseCommand('unpublish acme 2026-10')).toEqual({ kind: 'unpublish', client: 'acme', month: '2026-10' })
+  })
+  test('USAGE names the new commands', () => {
+    for (const s of ['publish <client>', 'subscribe', 'portal', 'unpublish <client> <YYYY-MM>', 'key set <key>', 'key show']) expect(USAGE).toContain(s)
+  })
+})

@@ -1,19 +1,18 @@
-import { parseCommand } from '../core/args.ts'
+import { parseCommand, tokenize } from '../core/args.ts'
 import { csvName } from '../core/names.ts'
 import { daysCsv, ticketsCsv } from '../core/csv.ts'
-import { addDays, localDate, mondayOf, monthBounds } from '../core/dates.ts'
+import { addDays, localDate, mondayOf } from '../core/dates.ts'
+import { publishedLines } from '../core/publish.ts'
 import { renderReport } from '../core/report.ts'
 import { DEFAULT_RULES, clientName } from '../core/rules.ts'
-import { buildSnapshot } from '../core/snapshot.ts'
 import { weekLines } from '../core/summary.ts'
 import { buildTimesheet } from '../core/timesheet.ts'
-import { ReadError, appendManual, readManual, readManualStrict, readRules, readRulesStrict, readSessions, writeRules } from './files.ts'
+import { ReadError, appendManual, readManual, readRules, readRulesStrict, readSessions, writeRules } from './files.ts'
 import { refreshStatus } from './status.ts'
-import { commitsFor } from './git.ts'
-import { homeDir, type CommandEngine, type PaneEngine } from './paths.ts'
+import { monthData, snapshotFor } from './report-data.ts'
+import { homeDir, type CommandEngine, type PaneEngine, type PublishEngine } from './paths.ts'
+import { keyForget, keyInfo, keySet, keyShow, portal, publish, refreshStatuses, subscribe, unpublish } from './publishing.ts'
 import type { Recorder } from './recorder.ts'
-
-const VERSION = '0.1.1'
 
 async function context($: PaneEngine | CommandEngine, strict = false) {
   const home = await homeDir($)
@@ -51,16 +50,18 @@ async function writeExport($: CommandEngine, path: string, text: string): Promis
   }
 }
 
-export async function runCommand($: CommandEngine, recorder: Recorder, args: string): Promise<{ text: string; openPane: boolean }> {
+export async function runCommand($: PublishEngine, recorder: Recorder, args: string): Promise<{ text: string; openPane: boolean }> {
   try {
     return await run($, recorder, args)
   } catch (err) {
     if (err instanceof ReadError) return { text: err.message, openPane: false }
+    // The publishing commands answer in text whatever goes wrong; the older ones keep today's behaviour.
+    if (['publish', 'unpublish', 'subscribe', 'portal', 'key'].includes(tokenize(args)[0] ?? '')) return { text: errorText(err), openPane: false }
     throw err
   }
 }
 
-async function run($: CommandEngine, recorder: Recorder, args: string): Promise<{ text: string; openPane: boolean }> {
+async function run($: PublishEngine, recorder: Recorder, args: string): Promise<{ text: string; openPane: boolean }> {
   const cmd = parseCommand(args)
   const { home, r, rules, today } = await context($, cmd.kind !== 'pane' && cmd.kind !== 'tz' && cmd.kind !== 'error')
   const rulesBroken = !r.ok ? `${r.error}. Fix rules.json first.` : null
@@ -69,7 +70,11 @@ async function run($: CommandEngine, recorder: Recorder, args: string): Promise<
 
   switch (cmd.kind) {
     case 'error': return { text: cmd.message, openPane: false }
-    case 'pane': return { text: (await paneLines($)).join('\n'), openPane: true }
+    case 'pane': {
+      let published: string[] = []
+      try { published = publishedLines(await refreshStatuses($)) } catch { /* never block the pane */ }
+      return { text: [...(await paneLines($)), ...(published.length ? ['', ...published] : [])].join('\n'), openPane: true }
+    }
     case 'tz': {
       const fromRules = rules.tzOffsetMinutes !== null
       const m = fromRules ? rules.tzOffsetMinutes! : -new Date().getTimezoneOffset()
@@ -100,11 +105,8 @@ async function run($: CommandEngine, recorder: Recorder, args: string): Promise<
       if (rulesBroken) return { text: rulesBroken, openPane: false }
       if (cmd.client !== null && !known(cmd.client)) return { text: unknown(cmd.client), openPane: false }
       const month = cmd.month ?? today.slice(0, 7)
-      const { from, to } = monthBounds(month)
-      const { sessions, skipped } = await readSessions($, home, Date.parse(`${from}T00:00:00Z`) - 86_400_000)
-      const manualRead = await readManualStrict($, home)
-      const manual = manualRead.lines
-      const ts = buildTimesheet({ sessions, manual, rules, from, to })
+      const data = await monthData($, home, rules, month)
+      const { from, to, ts, manual } = data
       const scope = cmd.client ?? undefined
       const base = `${home}/exports/${csvName(cmd.client, month)}`
       for (const [path, text] of [[`${base}-days.csv`, daysCsv(ts, rules, scope, from, to)], [`${base}-tickets.csv`, ticketsCsv(ts, rules, manual, scope, from, to)]]) {
@@ -113,18 +115,12 @@ async function run($: CommandEngine, recorder: Recorder, args: string): Promise<
       }
       const written = [`${base}-days.csv`, `${base}-tickets.csv`]
       // What the CSVs and the preview lack, in one list: the preview shows it in its banner (never in the snapshot).
-      const notes: string[] = []
-      if (skipped > 0) notes.push(`${skipped} unreadable event lines were skipped.`)
-      if (manualRead.skipped > 0) notes.push(`${manualRead.skipped} unreadable manual lines were skipped.`)
-      if (ts.overlapDates.length) notes.push(`Overlapping clients on ${ts.overlapDates.join(', ')}: check before you bill.`)
+      const notes = [...data.notes]
       if (cmd.client !== null) {
         // The CSVs are already written: a failing preview must not hide them.
         try {
-          // Only the chosen client's sources: another client's commit titles must never reach this preview.
-          const sources = ts.ticketSources.filter(s => s.client === cmd.client)
-          const { commits, unavailable } = await commitsFor($, sources, rules.author, from, to)
-          if (unavailable > 0) notes.unshift(`Commit titles were unavailable for ${unavailable} branch(es) (deleted branch, or not the CLI).`)
-          const snapshot = buildSnapshot({ timesheet: ts, manual, rules, clientId: cmd.client, from, to, commits, showCommits: true, version: VERSION })
+          const { snapshot, notes: commitNotes } = await snapshotFor($, data, rules, cmd.client, true)
+          notes.unshift(...commitNotes)
           await $.fs.write(`${base}-preview.html`, renderReport(snapshot, { banner: ['Preview: this is what your client will see.', ...notes] }))
           written.push(`${base}-preview.html`)
         } catch (err) {
@@ -133,5 +129,17 @@ async function run($: CommandEngine, recorder: Recorder, args: string): Promise<
       }
       return { text: ['Exported:', ...written.map(p => `  ${p}`), ...notes].join('\n'), openPane: false }
     }
+    case 'publish': {
+      if (rulesBroken) return { text: rulesBroken, openPane: false }
+      if (!known(cmd.client)) return { text: unknown(cmd.client), openPane: false }
+      return publish($, { home, rules, today }, cmd)
+    }
+    case 'subscribe': return subscribe($, cmd.plan)
+    case 'portal': return portal($)
+    case 'unpublish': return unpublish($, cmd.client, cmd.month)
+    case 'key': return keyInfo($)
+    case 'key-show': return keyShow($)
+    case 'key-set': return keySet($, cmd.key)
+    case 'key-forget': return keyForget($)
   }
 }
