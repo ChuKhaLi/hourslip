@@ -42,7 +42,7 @@ Usage:
 ```
 
 `publish` shows a preview of the report (what it contains, how many hours) and sends nothing. Add `--confirm` to
-publish it: you get a link to send, copied to your clipboard. The first two reports are free, no card; after that
+publish it: you get a link to send, copied to your clipboard. The first two reports are free, no card (unpublishing one does not give it back); after that
 `subscribe` opens a checkout page for Pro. The pane lists your reports under Published; `unpublish` deletes one,
 and its link then answers 410.
 

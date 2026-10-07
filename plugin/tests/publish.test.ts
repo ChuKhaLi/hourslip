@@ -118,11 +118,11 @@ describe('/hourslip publish', () => {
     expect(out).toContain(`Published acme 2026-10 v1: https://r.hourslip.dev/r/${RID}`)
     expect(w.fetches.map(f => `${f.method} ${f.url}`)).toEqual(['POST https://r.hourslip.dev/keys/free', 'POST https://r.hourslip.dev/reports'])
     const sent = JSON.parse(w.fetches[1]!.body!)
-    expect(sent).toMatchObject({ v: 1, client: { name: 'ACME' }, period: { from: '2026-10-01', to: '2026-10-31' }, generator: { version: '0.2.0' } })
+    expect(sent).toMatchObject({ v: 1, client: { name: 'ACME' }, period: { from: '2026-10-01', to: '2026-10-31' }, generator: { version: '0.2.1' } })
     expect(w.copies).toEqual([`https://r.hourslip.dev/r/${RID}`])
     expect(w.toasts).toContain('Published acme 2026-10 v1 · link copied')
     // The test-side $ has no store: the entry is proven through unpublish, which only acts on a remembered report.
-    expect((await run($, 'unpublish acme 2026-10')).text).toBe('Unpublished acme 2026-10: the link now answers 410.')
+    expect((await run($, 'unpublish acme 2026-10')).text).toBe('Unpublished acme 2026-10: the link now answers 410. On the free plan, unpublishing does not give back a free report.')
   })
   test('--no-commits sends no commit titles', async ($, on) => {
     const w = world(on, { files: FILES, http: server() })
@@ -179,7 +179,7 @@ describe('/hourslip subscribe, portal, unpublish, key', () => {
   test('unpublish deletes the remembered report', async ($, on) => {
     const w = world(on, { files: FILES, http: server() })
     await run($, 'publish acme 2026-10 --confirm')
-    expect((await run($, 'unpublish acme 2026-10')).text).toBe('Unpublished acme 2026-10: the link now answers 410.')
+    expect((await run($, 'unpublish acme 2026-10')).text).toBe('Unpublished acme 2026-10: the link now answers 410. On the free plan, unpublishing does not give back a free report.')
     expect(w.fetches.at(-1)).toMatchObject({ method: 'DELETE', url: `https://r.hourslip.dev/reports/${RID}` })
     expect((await run($, 'unpublish acme 2026-10')).text).toBe('No published report for acme 2026-10 on this machine.')
   })
@@ -187,7 +187,7 @@ describe('/hourslip subscribe, portal, unpublish, key', () => {
     const w = world(on, { files: FILES, http: server() })
     expect((await run($, 'key')).text).toBe('No key yet: one is created on your first publish.')
     expect((await run($, `key set ${KEY}`)).text).toMatch(/Key …kkkk set\./)
-    expect((await run($, 'key')).text).toBe('Key …kkkk · free · free · free reports left: 1')
+    expect((await run($, 'key')).text).toBe('Key …kkkk · free · free reports left: 1')
     expect((await run($, 'key set hs_bad')).text).toMatch(/not a hourslip key/)
     expect((await run($, 'key forget')).text).toMatch(/forgotten/)
     expect((await run($, 'key')).text).toBe('No key yet: one is created on your first publish.')
@@ -261,7 +261,7 @@ describe('fix round 1', () => {
   test('unpublish: a 404 from the server still forgets the entry', async ($, on) => {
     world(on, { files: FILES, http: (m, u, b, h) => m === 'DELETE' ? { status: 404, body: { error: { code: 'not_found', message: 'gone' } } } : server()(m, u) })
     await run($, 'publish acme 2026-10 --confirm')
-    expect((await run($, 'unpublish acme 2026-10')).text).toBe('Unpublished acme 2026-10: the link now answers 410.')
+    expect((await run($, 'unpublish acme 2026-10')).text).toBe('Unpublished acme 2026-10: the link now answers 410. On the free plan, unpublishing does not give back a free report.')
     expect((await run($, 'unpublish acme 2026-10')).text).toBe('No published report for acme 2026-10 on this machine.')
   })
   test('key set: a key the server does not know changes nothing', async ($, on) => {

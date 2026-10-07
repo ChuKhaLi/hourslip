@@ -88,6 +88,12 @@ describe('publish helpers', () => {
     expect(lines.at(-1)).toBe('Nothing has been sent yet.')
     expect(lines.some(l => l.startsWith('Invoice ACME-2026-10:'))).toBe(true)
   })
+  test('summaryLines counts one day and one ticket in the singular', () => {
+    const one = { ...SAMPLE_SNAPSHOT, days: SAMPLE_SNAPSHOT.days.slice(0, 1), tickets: SAMPLE_SNAPSHOT.tickets.slice(0, 1) }
+    expect(summaryLines(one, [], 'p', 'c')).toContain('1 day, 1 ticket')
+    const two = { ...SAMPLE_SNAPSHOT, days: SAMPLE_SNAPSHOT.days.slice(0, 2), tickets: SAMPLE_SNAPSHOT.tickets.slice(0, 2) }
+    expect(summaryLines(two, [], 'p', 'c')).toContain('2 days, 2 tickets')
+  })
   test('KEY_RE', () => {
     expect(KEY_RE.test('hs_' + 'a1'.repeat(16))).toBe(true)
     expect(KEY_RE.test('hs_short')).toBe(false)

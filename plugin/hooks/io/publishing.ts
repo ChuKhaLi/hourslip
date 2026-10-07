@@ -106,8 +106,10 @@ export async function unpublish($: PublishEngine, client: string, month: string)
   try { await $.store.set('reports', list.filter(e => e !== entry)) } catch {
     return say(`The report ${client} ${month} was deleted on the server (its link now answers 410), but this machine could not update its list, so the pane may still show it.`)
   }
-  return say(`Unpublished ${client} ${month}: the link now answers 410.`)
+  return say(`Unpublished ${client} ${month}: the link now answers 410. ${NO_REFUND}`)
 }
+
+const NO_REFUND = 'On the free plan, unpublishing does not give back a free report.'
 
 const tail = (key: string) => `…${key.slice(-4)}`
 
@@ -119,7 +121,8 @@ export async function keyInfo($: PublishEngine): Promise<Out> {
   const b = (r.body ?? {}) as { status?: unknown; plan?: unknown; freeLeft?: unknown }
   if (typeof b.status !== 'string' || typeof b.plan !== 'string') return say('The server sent an unexpected reply.')
   const left = typeof b.freeLeft === 'number' ? ` · free reports left: ${b.freeLeft}` : ''
-  return say(`Key ${tail(key)} · ${clean(b.status, 40)} · ${clean(b.plan, 40)}${left}`)
+  const status = clean(b.status, 40), plan = clean(b.plan, 40)
+  return say(`Key ${tail(key)} · ${status === plan ? plan : `${status} · ${plan}`}${left}`)
 }
 
 export async function keyShow($: PublishEngine): Promise<Out> {

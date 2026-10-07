@@ -1,1 +1,1 @@
-{ "name": "hourslip", "version": "0.2.0", "author": { "name": "ChuKhaLi" }, "description": "Billable hours from your Claude Code sessions, per client and ticket.", "types": "./types/index.d.ts" }
+{ "name": "hourslip", "version": "0.2.1", "author": { "name": "ChuKhaLi" }, "description": "Billable hours from your Claude Code sessions, per client and ticket.", "types": "./types/index.d.ts" }

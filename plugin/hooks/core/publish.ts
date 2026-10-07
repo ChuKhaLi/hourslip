@@ -69,6 +69,7 @@ export function openArgv(os: Os, url: string): string[] {
 }
 
 const money = (cents: number, currency: string) => `${(cents / 100).toFixed(2)} ${currency}`
+const count = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 
 export function summaryLines(s: Snapshot, notes: string[], previewPath: string, confirmCommand: string): string[] {
   const t = s.totals
@@ -76,7 +77,7 @@ export function summaryLines(s: Snapshot, notes: string[], previewPath: string, 
     `${s.client.name} · ${s.period.from} to ${s.period.to}`,
     `Billable ${formatMinutes(t.presenceMinutes + t.manualMinutes)} (measured ${formatMinutes(t.presenceMinutes)}, by hand ${formatMinutes(t.manualMinutes)}) · Claude ${formatMinutes(t.claudeMinutes)}`,
     ...(s.invoice ? [`Invoice ${s.invoice.number}: ${money(s.invoice.amountCents, s.invoice.currency)}, due ${s.invoice.dueDate}`] : []),
-    `${s.days.length} days, ${s.tickets.length} tickets${s.showCommits ? '' : ' · commit titles hidden'}`,
+    `${count(s.days.length, 'day')}, ${count(s.tickets.length, 'ticket')}${s.showCommits ? '' : ' · commit titles hidden'}`,
     ...notes,
     `Preview: ${previewPath}`,
     `Publish: ${confirmCommand}`,
