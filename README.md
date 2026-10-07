@@ -15,6 +15,10 @@ Measured from Claude Code activity. Time outside Claude Code, such as meetings o
     claude plugin marketplace add ChuKhaLi/hourslip
     claude plugin install hourslip@hourslip
 
+If the first line fails to clone the repository (git may try SSH), give the full URL instead:
+
+    claude plugin marketplace add https://github.com/ChuKhaLi/hourslip.git
+
 Mods are on by default in current Claude Code (checked on 2.1.291); nothing to enable.
 
 ## First setup
