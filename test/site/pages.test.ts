@@ -80,7 +80,8 @@ test('legal pages carry the date and the facts the spec fixes', () => {
   for (const s of ["Your IP address is used in memory by hourslip's server to limit free keys, and hourslip's server never stores it.",
     "hourslip.dev is served by Cloudflare, which processes visitors' IP addresses to deliver the site.",
     'hosting provider in Singapore', 'kept for 30 days', 'transferred outside it', 'never records prompt text or file contents',
-    '/hourslip unpublish', 'within 30 days', 'sets no cookies, runs no analytics', 'Report links (r.hourslip.dev) are served through Cloudflare']) expect(privacy, s).toContain(s)
+    '/hourslip unpublish', 'within 30 days', 'sets no cookies, runs no analytics', 'Report links (r.hourslip.dev) are served through Cloudflare',
+    'with your email address and its subscription and payment ids in the page address']) expect(privacy, s).toContain(s)
   const refunds = read('refunds.html')
   for (const s of ['within 14 days of your first payment', 'each yearly renewal', 'Monthly renewals are not refunded']) expect(refunds, s).toContain(s)
   expect(read('contact.html')).toContain('within 2 business days')
