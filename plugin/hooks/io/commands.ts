@@ -8,7 +8,6 @@ import { DEFAULT_RULES, clientName } from '../core/rules.ts'
 import { weekLines } from '../core/summary.ts'
 import { buildTimesheet } from '../core/timesheet.ts'
 import { ReadError, appendManual, readManual, readRules, readRulesStrict, readSessions, writeRules } from './files.ts'
-import { refreshStatus } from './status.ts'
 import { monthData, snapshotFor } from './report-data.ts'
 import { homeDir, type CommandEngine, type PaneEngine, type PublishEngine } from './paths.ts'
 import { keyForget, keyInfo, keySet, keyShow, portal, publish, refreshStatuses, subscribe, unpublish } from './publishing.ts'
@@ -85,7 +84,6 @@ async function run($: PublishEngine, recorder: Recorder, args: string): Promise<
       if (!known(cmd.client)) return { text: unknown(cmd.client), openPane: false }
       const line = await recorder.record($, 'tag', { tag: { client: cmd.client, ticket: cmd.ticket, scope: cmd.scope } })
       if (!line) return { text: 'hourslip could not record the tag (see the status line).', openPane: false }
-      await refreshStatus($, recorder)
       return { text: `Tagged ${cmd.scope === 'session' ? 'the whole session' : 'this session from now'}: ${clientName(rules, cmd.client)}${cmd.ticket ? ` · ${cmd.ticket}` : ''}.`, openPane: false }
     }
     case 'add': {

@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Send your client a timesheet they can confirm | hourslip</title>
+  <meta name="description" content="How to send a client the month's hours as a CSV, a PDF, a shared spreadsheet or a report link, and what a name typed on a hourslip report records, what it does not check, and what unpublishing does.">
+  <link rel="canonical" href="https://hourslip.dev/guides/send-client-timesheet-to-confirm">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="hourslip">
+  <meta property="og:url" content="https://hourslip.dev/guides/send-client-timesheet-to-confirm">
+  <meta property="og:title" content="Send your client a timesheet they can confirm">
+  <meta property="og:description" content="A CSV, a PDF, a shared sheet or a link: how to send the month's hours, and what Confirm on a hourslip report does and does not check.">
+  <meta property="og:image" content="https://hourslip.dev/og/send-client-timesheet-to-confirm.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://hourslip.dev/og/send-client-timesheet-to-confirm.png">
+  <meta name="theme-color" content="#f6f1e7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1a1712" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/fonts/source-serif-4-latin-wght.v1.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/style.v2.css">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"TechArticle","headline":"Send your client a timesheet they can confirm","description":"How to send a client the month's hours as a CSV, a PDF, a shared spreadsheet or a report link, and what a name typed on a hourslip report records, what it does not check, and what unpublishing does.","url":"https://hourslip.dev/guides/send-client-timesheet-to-confirm","dateModified":"2026-10-08","author":{"@type":"Organization","name":"ChuKhaLi"}}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"hourslip","item":"https://hourslip.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://hourslip.dev/guides"},{"@type":"ListItem","position":3,"name":"Send your client a timesheet they can confirm","item":"https://hourslip.dev/guides/send-client-timesheet-to-confirm"}]}
+  </script>
+</head>
+<body>
+  <!--email_off-->
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site">
+    <a class="brand" href="/"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect x="7" y="4" width="18" height="24" rx="2" fill="none" stroke="currentColor" stroke-width="3"/><path d="M11 11h10M11 16h10M11 21h6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>hourslip</a>
+    <nav aria-label="Site">
+      <a href="/#how">How it works</a>
+      <a href="/sample">Sample report</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="https://github.com/ChuKhaLi/hourslip">GitHub</a>
+    </nav>
+  </header>
+
+  <main id="main" class="legal">
+    <h1>Send your client a timesheet they can confirm</h1>
+    <p class="updated">Last updated <time datetime="2026-10-08">2026-10-08</time></p>
+    <p><strong>The short answer.</strong> Send the month's hours per day and per ticket, with the time you added by hand marked as such, in something your client can open without your tools: a CSV file, a PDF, a spreadsheet you share with them, or a link to a report page. Ask them to answer on it: a reply, a comment on the sheet or, on a hourslip report, a name typed on the page. That name is typed by whoever holds the link: “hourslip does not verify who confirms: anyone with the link can.”</p>
+
+    <h2 id="without-a-link">Send it as a file or a shared sheet</h2>
+    <ul>
+      <li><strong>A CSV file.</strong> One row per day and ticket, with the hours and a note. Your client can open it in a spreadsheet; Google Sheets' <a href="https://support.google.com/docs/answer/40608?hl=en">import help</a> (checked 2026-10-08): “You can import a spreadsheet in many file formats”, and <code>.csv</code> is one of those it lists.</li>
+      <li><strong>A PDF.</strong> Print the timesheet to a PDF and attach it. In Chrome, press Ctrl + p (⌘ + p on a Mac); <a href="https://support.google.com/chrome/answer/1069693?hl=en">Chrome's print help</a> (checked 2026-10-08): “In the window that appears, select the destination and change your preferred print settings.” For saving to Google Drive it gives three ways: with the Save to Google Drive extension, choose “Save to Google Drive” as the destination; with Drive for desktop or the Drive website, click <em>Save as PDF</em>, then upload the PDF.</li>
+      <li><strong>A shared spreadsheet.</strong> Keep the timesheet in a sheet and share it with your client. <a href="https://support.google.com/drive/answer/2494822?hl=en">Google Drive's sharing help</a> (checked 2026-10-08): “you can control whether people can edit, comment on, or only open the file.” Share it as Commenter, one of its three roles with Viewer and Editor, and the client can answer on a cell: “Highlight the text, images, cells, slides, or scenes you want to comment on.” (<a href="https://support.google.com/docs/answer/65129?hl=en">comments help</a>, checked 2026-10-08).</li>
+    </ul>
+    <p>Whichever you send, the client's yes is whatever they write back: a reply to your email or a comment on the sheet. Keep it with the month's timesheet.</p>
+    <p>hourslip makes the CSV and the PDF on its free plan. <code>/hourslip export acme</code> writes the month's <code>hourslip-acme-2026-10-days.csv</code> and <code>hourslip-acme-2026-10-tickets.csv</code> (the current month, or the <code>YYYY-MM</code> you give), and with a client also <code>hourslip-acme-2026-10-preview.html</code>: the report page as a local file. Its footer says “Print this page to save it as PDF.”, and its preview banner is hidden when printed.</p>
+
+    <h2 id="report-link">A report link with Confirm: hourslip</h2>
+    <p>hourslip is a Claude Code mod (a plugin of function hooks) that keeps the timesheet while you work; <a href="/guides/track-time-in-claude-code">how it counts</a> and <a href="/guides/bill-clients-for-claude-code-hours">which hours it bills</a> are in the first two guides. Its report link is the same report page, published, with a Confirm form at the bottom.</p>
+    <ol>
+      <li><code>/hourslip publish acme</code> shows a summary of the month's report (the hours, the invoice if the client has a rate, the days and tickets) and writes a local preview. It ends with “Nothing has been sent yet.”</li>
+      <li><code>/hourslip publish acme 2026-10 --confirm</code> publishes it. The reply is the link; in an interactive session it adds “The link is copied.” hourslip does not send it: you send it to your client, by email or however you like.</li>
+      <li>On the page, whoever holds the link can type a name and press Confirm these hours.</li>
+      <li><code>/hourslip</code> asks the server about your reports not yet confirmed (up to 20), then lists them under Published: <code>✓ confirmed by Dana Client (link holder, unverified)</code>, or <code>not confirmed</code>.</li>
+    </ol>
+    <figure class="gif">
+      <img src="/guides/media/send-client-timesheet-to-confirm.gif" width="1000" height="540" loading="lazy" alt="A Claude Code session for the sample client ACME Corp. /hourslip publish acme shows the October summary, 0h10 billable and invoice ACME-2026-10 for 6.67 USD, and says nothing has been sent. The --confirm command prints the report link and says the link is copied. After a name is typed on the report page, /hourslip lists the report as confirmed by Dana Client, link holder, unverified. /hourslip unpublish acme 2026-10 says the link now answers 410, and /hourslip then lists no published report.">
+      <figcaption>Recorded in Claude Code 2.1.293 on Windows, 2026-10-08, with a sample client and a local test server; the welcome banner is cropped, and the tip and spinner words are Claude Code's. In this recording, Claude Code draws a plugin's status line with ⚠ and the plugin's name. The name Dana Client is sent to the test server's report page by the recording script, between the second and third commands. One prompt counts 10 minutes, so 0h10 at 40 USD an hour is 6.67 USD.</figcaption>
+    </figure>
+
+    <h3 id="what-the-client-sees">What the client sees</h3>
+    <p>Your client needs no account: “No. They open the link.” The page has the billable hours with the measured part, the part added by hand and the time Claude was working; the line “Measured from Claude Code activity. Time outside Claude Code, such as meetings or manual testing, appears only where it was added by hand, and is labelled so.”; the hours by day and by ticket; the time added by hand with your notes; the invoice, if the client has a rate; and the Confirm form.</p>
+    <figure class="gif">
+      <img src="/guides/media/send-client-timesheet-to-confirm-report.png" width="900" height="1240" loading="lazy" alt="The report page for ACME Corp, 2026-10-01 to 2026-10-31: Billable 1h10, measured 0h10 and added by hand 1h00, the hours by day and by ticket ACME-182, a review call added by hand, invoice ACME-2026-10 for 46.67 USD due 2026-11-15, and at the bottom Confirm these hours with a Your name field, a button, and the line hourslip does not verify who confirms: anyone with this link can.">
+      <figcaption>The report page as the local test server serves it (the same page renderer as hourslip's server), 2026-10-08, with a sample client: one prompt (10 minutes) and one hour added by hand at 40 USD an hour. The page is shown whole, in the light colour scheme; the empty space below it is cropped.</figcaption>
+    </figure>
+    <ul>
+      <li>The name is 1 to 100 characters. After it is sent the page reads, for the sample: “Confirmed by Dana Client (link holder) at 2026-10-07 18:06 UTC.” The server writes the time in UTC, as the line shows.</li>
+      <li>Each version is confirmed once. A second try gets “This version was already confirmed. Nothing was changed.”</li>
+      <li>The page says, under the form, “hourslip does not verify who confirms: anyone with this link can.” It records the name someone typed and when; whoever holds the link, including anyone it is forwarded to, can type any name.</li>
+      <li>Printed from the browser, the page leaves out the Confirm button and the name field. It is marked <code>noindex</code> for search engines.</li>
+    </ul>
+
+    <h3 id="new-version">A new version, unpublishing, and free reports</h3>
+    <p>Publishing the same client and month again makes a new version (v2, then v3), at a new link. The old link then shows “A newer version of this report exists.” with a link to the newest, and has no Confirm form. While the earlier version is still published, a new version does not count as another free report.</p>
+    <p><code>/hourslip unpublish acme 2026-10</code> deletes the report: every version of that client and month, and the name typed on each. The reply: <code>Unpublished acme 2026-10: the link now answers 410. On the free plan, unpublishing does not give back a free report.</code> Whoever opens the link then reads “This report is no longer available. It was removed by its author or reached the end of its two years.” The pane lists the report until you run <code>/hourslip</code> again.</p>
+    <p>The first two reports are free, no card (unpublishing one does not give it back). Without Pro, a third report (a new client or month, not a new version) is refused with “This key has used its 2 free reports. Run /hourslip subscribe to publish more. Links you already sent keep working.” Pro is $72 a year, or $8 billed monthly, and <code>/hourslip subscribe</code> opens its checkout page. A published report stays online for 2 years from publishing, and cancelling Pro only stops new publishes.</p>
+    <h2 id="limits">What hourslip does not do</h2>
+    <ul>
+      <li>It checks no one. Your client has no account, and the name on the page is whatever was typed by whoever holds the link.</li>
+      <li>A name, once typed, cannot be changed or withdrawn; the usage lists no command for it. Unpublishing deletes the report, with every name typed on it.</li>
+      <li>It does not tell you when a name is typed. You see it when you run <code>/hourslip</code>, which asks the server then.</li>
+      <li>Unpublish works on the machine that published: elsewhere it answers “No published report for acme 2026-10 on this machine.”</li>
+      <li>One report per client and calendar month; there is no report for another span of days.</li>
+      <li>After 2 years a published link answers 410, like an unpublished one.</li>
+      <li>The report holds the time hourslip saw in Claude Code; time away from it is there only if you added it by hand with <code>/hourslip add</code>.</li>
+    </ul>
+    <h2 id="related">Related</h2>
+    <ul>
+      <li><a href="/guides/track-time-in-claude-code">How to track time spent in Claude Code</a></li>
+      <li><a href="/guides/bill-clients-for-claude-code-hours">Bill clients for hours worked with Claude Code</a></li>
+      <li><a href="/guides/timesheet-per-ticket-from-branch">A timesheet per ticket from git branch names</a></li>
+      <li><a href="/sample">A sample hourslip report</a></li>
+      <li><a href="https://support.google.com/drive/answer/2494822?hl=en">Share files from Google Drive</a>, Google Drive Help (checked 2026-10-08)</li>
+      <li><a href="/guides">All guides</a></li>
+      <li><a href="/">Install hourslip, free</a></li>
+    </ul>
+  </main>
+
+  <footer class="site">
+    <p>hourslip, by ChuKhaLi. Support: <a href="mailto:support@hourslip.dev">support@hourslip.dev</a></p>
+    <nav aria-label="Legal">
+      <a href="/guides">Guides</a>
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/refunds">Refunds</a>
+      <a href="/contact">Contact</a>
+      <a href="https://github.com/ChuKhaLi/hourslip">GitHub</a>
+    </nav>
+    <p class="fine">© 2026 ChuKhaLi</p>
+  </footer>
+  <!--/email_off-->
+</body>
+</html>

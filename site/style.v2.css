@@ -118,3 +118,23 @@ footer.site nav{display:flex;flex-wrap:wrap;gap:6px 18px}
   header.site nav,.skip{display:none}
   .hero{background:none}
 }
+img{max-width:100%;height:auto}
+figure.gif{margin:24px 0;border:1px solid var(--rule);border-radius:6px;overflow:hidden}
+figure.gif img{display:block}
+figure figcaption{color:var(--muted);font-size:15px;margin-top:8px}
+ul.guides{padding-left:20px}
+ul.guides li{margin:0 0 12px}
+ul.guides li a{display:block;font-weight:600}
+main.legal p.updated{color:var(--muted);margin:0 0 24px}
+.compare{margin:24px 0}
+.compare table{border-collapse:collapse;width:100%;font-size:15px;line-height:1.45}
+.compare th,.compare td{text-align:left;vertical-align:top;padding:8px 10px 8px 0;border-bottom:1px solid var(--rule)}
+.compare thead th{border-bottom-width:2px}
+.compare tbody th{font-weight:700}
+@media (max-width:640px){
+  .compare table,.compare tbody,.compare tr,.compare th,.compare td{display:block}
+  .compare thead{display:none}
+  .compare tbody tr{border-bottom:2px solid var(--rule);padding:8px 0}
+  .compare tbody th,.compare td{border-bottom:0;padding:4px 0}
+  .compare td::before{content:attr(data-label) ": ";font-weight:600;color:var(--muted)}
+}

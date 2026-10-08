@@ -4,7 +4,7 @@ import { expect, test } from 'vitest'
 import { SITE } from '../../scripts/build-site.mjs'
 import { contrast, themes } from '../helpers/css.ts'
 
-const CSS = readFileSync(join(SITE, 'style.v1.css'), 'utf8')
+const CSS = readFileSync(join(SITE, 'style.v2.css'), 'utf8')
 const TOKENS = ['--paper', '--sheet', '--ink', '--muted', '--rule', '--accent', '--button', '--on-button',
   '--term-bg', '--term-bar', '--term-fg', '--term-dim', '--status-bg', '--status-fg', '--focus']
 // [foreground, background, floor]: 4.5 for text, 3 for the focus ring.
@@ -53,4 +53,8 @@ test('fonts swap in, every stack ends in a generic family, and every font file e
   const rules = CSS.replace(/@font-face\{[^}]*\}/g, '')
   for (const m of rules.matchAll(/font(?:-family)?:[^;}]*?(['"][^;}]*)[;}]/g)) expect(m[0], m[0]).toMatch(/(serif|monospace)[;}]$/)
   for (const m of CSS.matchAll(/url\((\/fonts\/[^)]+)\)/g)) expect(existsSync(join(SITE, m[1])), m[1]).toBe(true)
+})
+test('images fit the column and GIF figures carry a border (Review Focus 1, 2)', () => {
+  expect(CSS).toMatch(/img\{max-width:100%;height:auto\}/)
+  expect(CSS).toMatch(/figure\.gif\{[^}]*border:1px solid var\(--rule\)/)
 })

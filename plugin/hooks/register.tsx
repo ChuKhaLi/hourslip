@@ -2,6 +2,7 @@ import { atom, read, update, type Register } from 'claude-code'
 import { errorText, runCommand } from './io/commands.ts'
 import { installRecorder } from './io/install.ts'
 import { createRecorder } from './io/recorder.ts'
+import { refreshStatus } from './io/status.ts'
 
 const PANE = 'hourslip-week'
 const pane = atom({ plugin: 'hourslip', key: 'pane' } as const, { lines: [] as string[] })
@@ -10,6 +11,7 @@ export const register: Register = on => {
   const recorder = createRecorder()
   installRecorder(on, recorder)
   on('command.run', { command: 'hourslip' }, async ($, e) => {
+    let reply: string
     try {
       const { text, openPane } = await runCommand({
         env: { hourslipHome: () => $.env.get('HOURSLIP_HOME'), home: () => $.env.get('HOME'), userProfile: () => $.env.get('USERPROFILE'), server: () => $.env.get('HOURSLIP_SERVER'), os: () => $.env.get('OS') },
@@ -25,10 +27,19 @@ export const register: Register = on => {
         await update($, pane, () => ({ lines: text.split('\n') }))
         await $.ui.open({ id: PANE, title: 'hourslip · this week' })
       }
-      return { text }
+      reply = text
     } catch (err) {
-      return { text: errorText(err) }
+      reply = errorText(err)
     }
+    // A command can change today's total (add, tag): redraw now, not at the next prompt. Never throws.
+    await refreshStatus({
+      env: { hourslipHome: () => $.env.get('HOURSLIP_HOME'), home: () => $.env.get('HOME'), userProfile: () => $.env.get('USERPROFILE'), server: () => $.env.get('HOURSLIP_SERVER'), os: () => $.env.get('OS') },
+      session: { id: () => $.session.id(), cwd: () => $.session.cwd(), repo: () => $.session.repo() },
+      fs: { read: p => $.fs.read(p), list: p => $.fs.list(p) },
+      clock: { now: () => $.clock.now() },
+      ui: { status: t => $.ui.status(t) },
+    }, recorder)
+    return { text: reply }
   })
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const { Box, Text } = $.ui.resolve(e)

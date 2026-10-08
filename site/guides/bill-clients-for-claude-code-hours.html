@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bill clients for hours worked with Claude Code | hourslip</title>
+  <meta name="description" content="Which hours to bill from Claude Code work (wall time, API time, active time, time added by hand), what to show a client, and how hourslip computes billable hours and the invoice.">
+  <link rel="canonical" href="https://hourslip.dev/guides/bill-clients-for-claude-code-hours">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="hourslip">
+  <meta property="og:url" content="https://hourslip.dev/guides/bill-clients-for-claude-code-hours">
+  <meta property="og:title" content="Bill clients for hours worked with Claude Code">
+  <meta property="og:description" content="Which of Claude Code's durations to start from, the time you add by hand, and a report with hours per day and ticket and an invoice line.">
+  <meta property="og:image" content="https://hourslip.dev/og/bill-clients-for-claude-code-hours.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://hourslip.dev/og/bill-clients-for-claude-code-hours.png">
+  <meta name="theme-color" content="#f6f1e7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1a1712" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/fonts/source-serif-4-latin-wght.v1.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/style.v2.css">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"TechArticle","headline":"Bill clients for hours worked with Claude Code","description":"Which hours to bill from Claude Code work (wall time, API time, active time, time added by hand), what to show a client, and how hourslip computes billable hours and the invoice.","url":"https://hourslip.dev/guides/bill-clients-for-claude-code-hours","dateModified":"2026-10-08","author":{"@type":"Organization","name":"ChuKhaLi"}}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"hourslip","item":"https://hourslip.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://hourslip.dev/guides"},{"@type":"ListItem","position":3,"name":"Bill clients for hours worked with Claude Code","item":"https://hourslip.dev/guides/bill-clients-for-claude-code-hours"}]}
+  </script>
+</head>
+<body>
+  <!--email_off-->
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site">
+    <a class="brand" href="/"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect x="7" y="4" width="18" height="24" rx="2" fill="none" stroke="currentColor" stroke-width="3"/><path d="M11 11h10M11 16h10M11 21h6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>hourslip</a>
+    <nav aria-label="Site">
+      <a href="/#how">How it works</a>
+      <a href="/sample">Sample report</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="https://github.com/ChuKhaLi/hourslip">GitHub</a>
+    </nav>
+  </header>
+
+  <main id="main" class="legal">
+    <h1>Bill clients for hours worked with Claude Code</h1>
+    <p class="updated">Last updated <time datetime="2026-10-08">2026-10-08</time>. Claude Code docs checked 2026-10-08.</p>
+    <p><strong>The short answer.</strong> To bill by the hour you need hours per client: the time you worked on their project in Claude Code, plus the time you spent on it away from Claude Code (a call, testing in a browser), which only you can note. The time Claude spent working falls inside the first number; it is not an extra amount on top. Show the client the hours per day and per ticket, mark what you added by hand, and say how the time was measured. This page gives no advice on rates, tax or contracts.</p>
+
+    <h2 id="which-hours">Which hours: what Claude Code counts</h2>
+    <p>Claude Code reports three kinds of duration, all for one session and none tied to a client:</p>
+    <ul>
+      <li><strong>Wall time.</strong> The <a href="https://code.claude.com/docs/en/statusline#cost-and-duration-tracking">status line field</a> <code>cost.total_duration_ms</code> is “Total wall-clock time the session has been running, in milliseconds. Accumulates across resumes and doesn't include time while the session isn't running”. A session left open while you are away still counts.</li>
+      <li><strong>API time.</strong> <code>cost.total_api_duration_ms</code> is “Total time spent waiting for API responses in milliseconds”: the model's share only.</li>
+      <li><strong>Active time.</strong> The telemetry metric <code>claude_code.active_time.total</code> (<a href="https://code.claude.com/docs/en/monitoring-usage#active-time-counter">monitoring docs</a>) “Tracks actual time spent actively using Claude Code, excluding idle time.” It goes on: “This metric is incremented during user interactions, such as typing and reading responses, and during CLI processing, such as tool execution and AI response generation.”</li>
+    </ul>
+    <p>API time alone leaves out your own reading, reviewing and typing; wall time can include a lunch break. None of the three says which client the time was for, and work on the project away from Claude Code has to be added by you.</p>
+
+    <h2 id="without-hourslip">Billing without hourslip</h2>
+    <p>Run <code>/usage</code> at the end of each session. Its Session block, from the <a href="https://code.claude.com/docs/en/costs#track-your-costs">costs page</a>, starts like this:</p>
+    <pre class="install">Total cost:            $0.55
+Total duration (API):  6m 20s
+Total duration (wall): 6h 33m 10s</pre>
+    <p>Note the duration before you start over: “These totals reset when <code>/clear</code> starts a new session”. Write it down per client, by which project folder the session was in, with the time you spent away from Claude Code on the same client. A spreadsheet with a row per day and client, the hours and your rate, gives the amount: hours times rate. A timer that you start and stop per client does the same job and also counts the calls.</p>
+    <p>The <code>Total cost</code> line is what the session's tokens cost, and “The figure is an estimate”. It says nothing about your hours.</p>
+
+    <h2 id="hourslip">Hours, rate and invoice: hourslip</h2>
+    <p>hourslip is a Claude Code mod (a plugin of function hooks). It records when you send prompts and when Claude's turns start and end, with the folder and the git branch; the folder gives the client and the branch the ticket. <a href="/guides/track-time-in-claude-code">How it counts a stretch of work</a> is in the first guide. Every report it makes has three numbers:</p>
+    <ul>
+      <li><strong>Measured</strong>: the stretches built from your prompts and Claude's turns.</li>
+      <li><strong>By hand</strong>: time you add, such as <code>/hourslip add 1h30 acme "Call with ACME" --ticket ACME-182</code> (<code>--date YYYY-MM-DD</code> for another day). Reports label it “added by hand”.</li>
+      <li><strong>Claude</strong>: each turn, from its start to its end. Turns are already inside the measured stretches, so this number is shown next to the billable hours and never added to them.</li>
+    </ul>
+    <p>Billable is measured time plus time added by hand. A rate is set per client, an amount and a three-letter currency: <code>/hourslip client add acme "ACME Corp" --path "&lt;folder&gt;/**" --rate 40 USD</code>, or <code>"rate": { "amount": 40, "currency": "USD" }</code> in <code>rules.json</code>.</p>
+    <p><code>/hourslip publish acme</code> previews the report for a calendar month (the current one, or <code>YYYY-MM</code>) and sends nothing. When the client has a rate, the report carries an invoice:</p>
+    <ul>
+      <li>Number: the client id in capitals and the month, so <code>ACME-2026-10</code> for October 2026.</li>
+      <li>Amount: billable minutes at the hourly rate, rounded to the nearest cent.</li>
+      <li>Due date: 15 days after the last day of the month.</li>
+      <li>Your business name and payment instructions, from <code>business</code> in <code>rules.json</code>, when you fill them in.</li>
+    </ul>
+    <p>A client without a rate gets the hours and no invoice.</p>
+    <figure class="term" role="img" aria-label="The hourslip publish preview for ACME Corp in October 2026: 1h40 billable, of which 0h10 measured and 1h30 added by hand, and invoice ACME-2026-10 for 66.67 USD due 2026-11-15.">
+      <div class="term-bar">acme/api · feat/ACME-182-login</div>
+      <pre class="term-body"><span class="term-dim">/hourslip publish acme</span>
+hourslip: ACME Corp · 2026-10-01 to 2026-10-31
+Billable 1h40 (measured 0h10, by hand 1h30) · Claude 0h00
+Invoice ACME-2026-10: 66.67 USD, due 2026-11-15
+1 day, 1 ticket
+Publish: /hourslip publish acme 2026-10 --confirm
+Nothing has been sent yet.</pre>
+    </figure>
+    <p class="updated">Captured with <code>claude -p</code> in Claude Code 2.1.292 on Windows, 2026-10-08, with a sample client at 40 USD an hour and a local test server. The preview's file path line is left out, and the typed command is shown dim. One prompt measured 0h10, the call added 1h30, and 1h40 at 40 USD an hour is 66.67 USD. Claude shows 0h00 because the sample's only turn was a one-word reply.</p>
+
+    <h2 id="what-the-client-sees">What the client sees</h2>
+    <p>The report is a page your client can read without hourslip: <code>/hourslip export acme</code> writes it as a local HTML file (“Print this page to save it as PDF.”), and <code>/hourslip publish acme --confirm</code> publishes it and gives you a link to send. It shows:</p>
+    <ul>
+      <li>Billable hours, with the measured part, the part added by hand and the time Claude was working.</li>
+      <li>The line “Measured from Claude Code activity. Time outside Claude Code, such as meetings or manual testing, appears only where it was added by hand, and is labelled so.”</li>
+      <li>By day: measured, by hand, Claude; a day is flagged “overlapping clients” or “capped at 12h” when that applies.</li>
+      <li>By ticket: the branches and your commit titles (<code>--no-commits</code> leaves the titles out).</li>
+      <li>Added by hand: each date, your note and the time.</li>
+      <li>The invoice, when the client has a rate: “1h40 at 40.00 USD per hour”, the amount and the due date.</li>
+    </ul>
+    <p>The same export writes two CSV files. The days file has the columns Measured hours, Claude hours, Manual hours and Total billable hours; the tickets file has one row per day and ticket, with your notes. See <a href="/sample">a sample report</a>.</p>
+    <p>On a published report, whoever holds the link can type a name and confirm the hours. “hourslip does not verify who confirms: anyone with the link can.” The first two published reports are free, no card; unpublishing one does not give it back.</p>
+    <h2 id="limits">What hourslip does not do</h2>
+    <ul>
+      <li>It gives no advice on rates, tax or contracts, and computes no tax: the invoice holds a number, the currency, the rate, the billable minutes, the amount and a due date, nothing more.</li>
+      <li>One rate per client. There is no rate per ticket or per kind of work.</li>
+      <li>Invoice numbers are not a running sequence: the number is the client id and the month, so publishing the same month again gives the same number.</li>
+      <li>The due date is always 15 days after the month ends; there is no setting for it.</li>
+      <li>Time away from Claude Code is not seen unless added by hand with <code>/hourslip add</code>.</li>
+      <li>Timestamps come from your own clock and are trusted: a client who doubts the hours is shown a lower bound, not a tamper-proof record.</li>
+      <li>Commit titles appear only when you run the commands in the Claude Code CLI; elsewhere, such as the desktop app, the preview and the command's reply say they are unavailable.</li>
+    </ul>
+    <h2 id="related">Related</h2>
+    <ul>
+      <li><a href="/guides/track-time-in-claude-code">How to track time spent in Claude Code</a></li>
+      <li><a href="/sample">A sample hourslip report</a></li>
+      <li><a href="https://code.claude.com/docs/en/costs">Manage costs effectively</a>, Claude Code docs</li>
+      <li><a href="/guides">All guides</a></li>
+      <li><a href="/">Install hourslip, free</a></li>
+    </ul>
+  </main>
+
+  <footer class="site">
+    <p>hourslip, by ChuKhaLi. Support: <a href="mailto:support@hourslip.dev">support@hourslip.dev</a></p>
+    <nav aria-label="Legal">
+      <a href="/guides">Guides</a>
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/refunds">Refunds</a>
+      <a href="/contact">Contact</a>
+      <a href="https://github.com/ChuKhaLi/hourslip">GitHub</a>
+    </nav>
+    <p class="fine">© 2026 ChuKhaLi</p>
+  </footer>
+  <!--/email_off-->
+</body>
+</html>

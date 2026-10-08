@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Time trackers for Claude Code: WakaTime, Toggl, ccusage and hourslip | hourslip</title>
+  <meta name="description" content="What WakaTime, Toggl, Harvest, ccusage and hourslip each count in Claude Code, from their own docs, and where each does better.">
+  <link rel="canonical" href="https://hourslip.dev/guides/claude-code-time-trackers">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="hourslip">
+  <meta property="og:url" content="https://hourslip.dev/guides/claude-code-time-trackers">
+  <meta property="og:title" content="Time trackers for Claude Code, compared">
+  <meta property="og:description" content="WakaTime, Toggl, Harvest, ccusage and hourslip: how each reaches Claude Code, what it counts, and time outside Claude Code.">
+  <meta property="og:image" content="https://hourslip.dev/og/claude-code-time-trackers.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://hourslip.dev/og/claude-code-time-trackers.png">
+  <meta name="theme-color" content="#f6f1e7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1a1712" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/fonts/source-serif-4-latin-wght.v1.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/style.v2.css">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"TechArticle","headline":"Time trackers for Claude Code: WakaTime, Toggl, ccusage and hourslip","description":"What WakaTime, Toggl, Harvest, ccusage and hourslip each count in Claude Code, from their own docs, and where each does better.","url":"https://hourslip.dev/guides/claude-code-time-trackers","dateModified":"2026-10-08","author":{"@type":"Organization","name":"ChuKhaLi"}}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"hourslip","item":"https://hourslip.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://hourslip.dev/guides"},{"@type":"ListItem","position":3,"name":"Time trackers for Claude Code: WakaTime, Toggl, ccusage and hourslip","item":"https://hourslip.dev/guides/claude-code-time-trackers"}]}
+  </script>
+</head>
+<body>
+  <!--email_off-->
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site">
+    <a class="brand" href="/"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect x="7" y="4" width="18" height="24" rx="2" fill="none" stroke="currentColor" stroke-width="3"/><path d="M11 11h10M11 16h10M11 21h6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>hourslip</a>
+    <nav aria-label="Site">
+      <a href="/#how">How it works</a>
+      <a href="/sample">Sample report</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="https://github.com/ChuKhaLi/hourslip">GitHub</a>
+    </nav>
+  </header>
+
+  <main id="main" class="legal">
+    <h1>Time trackers for Claude Code: WakaTime, Toggl, ccusage and hourslip</h1>
+    <p class="updated">Last updated <time datetime="2026-10-08">2026-10-08</time></p>
+    <p><strong>The short answer.</strong> They count different things. WakaTime has a Claude Code plugin that sends your activity to a WakaTime dashboard, next to its plugins for your editors. Toggl and Harvest have MCP servers: Claude Code starts and stops their timers, or logs time, when you ask it to, and their own apps time the rest of your day. ccusage reports tokens and estimated cost from Claude Code's local logs, not hours. hourslip keeps hours per client (from the folder) and per ticket (from the git branch) from your prompts and Claude's turns, inside Claude Code only. If you need time outside Claude Code, WakaTime, Toggl and Harvest do that and hourslip does not; if you need tokens and cost, ccusage does.</p>
+
+    <h2 id="compare">The tools side by side</h2>
+    <p>What each tool's own docs or repository say, read on 2026-10-08. Nothing was installed or signed up for, so every cell is documented, not measured.</p>
+    <div class="compare">
+      <table>
+        <thead>
+          <tr><th scope="col">Tool</th><th scope="col">How it reaches Claude Code</th><th scope="col">What it counts</th><th scope="col">Time outside Claude Code</th><th scope="col">Source</th></tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">Claude Code itself</th><td data-label="Reaches Claude Code">Built in, nothing to install: <code>/usage</code> and the status line</td><td data-label="Counts">One session's wall time and API time, and its cost, which hourslip does not show; no client or ticket</td><td data-label="Outside Claude Code">No</td><td data-label="Source"><a href="https://code.claude.com/docs/en/costs#track-your-costs">Claude Code docs</a> (checked 2026-10-08)</td></tr>
+          <tr><th scope="row">WakaTime</th><td data-label="Reaches Claude Code">A Claude Code plugin (command hooks)</td><td data-label="Counts">Time spent prompting AI and lines of code generated, per project, on your WakaTime dashboard</td><td data-label="Outside Claude Code">Yes, and better than hourslip: plugins for many editors, and a desktop app</td><td data-label="Source"><a href="https://github.com/wakatime/claude-code-wakatime">plugin repository</a>, <a href="https://wakatime.com/plugins">plugins</a> (checked 2026-10-08)</td></tr>
+          <tr><th scope="row">Toggl</th><td data-label="Reaches Claude Code">An MCP server, <code>@togglhq/mcp</code>, for Toggl 2.0</td><td data-label="Counts">Time entries, which Claude Code can list, start, stop, create and update when you ask</td><td data-label="Outside Claude Code">Yes, and better than hourslip: desktop, mobile and browser extension apps</td><td data-label="Source"><a href="https://www.npmjs.com/package/@togglhq/mcp">package README</a>, <a href="https://docs.toggl.com/toggl-mcp-and-cl">Toggl docs</a> (checked 2026-10-08)</td></tr>
+          <tr><th scope="row">Harvest</th><td data-label="Reaches Claude Code">A remote MCP server</td><td data-label="Counts">Timers and logged hours; reports by project, client or person (others' time as your Harvest role allows); draft invoices</td><td data-label="Outside Claude Code">Yes, and better than hourslip: Harvest itself and its integrations, such as a browser extension for GitHub</td><td data-label="Source"><a href="https://support.getharvest.com/hc/en-us/articles/46293697226381-Harvest-MCP">Harvest MCP article</a> (checked 2026-10-08)</td></tr>
+          <tr><th scope="row">ccusage</th><td data-label="Reaches Claude Code">A command-line tool that reads Claude Code's local logs</td><td data-label="Counts">Tokens and estimated cost by day, week, month, session and project, better than hourslip, which counts neither; no hours worked</td><td data-label="Outside Claude Code">Token usage of other agent CLIs, such as Codex; not time</td><td data-label="Source"><a href="https://github.com/ccusage/ccusage">repository</a>, <a href="https://ccusage.com/guide/claude">docs</a> (checked 2026-10-08)</td></tr>
+          <tr><th scope="row">hourslip</th><td data-label="Reaches Claude Code">A Claude Code mod (a plugin of function hooks)</td><td data-label="Counts">Hours per client (from the folder) and per ticket (from the git branch), from prompts and Claude's turns</td><td data-label="Outside Claude Code">Only time you add by hand</td><td data-label="Source"><a href="https://github.com/ChuKhaLi/hourslip">repository README</a> (checked 2026-10-08)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="checked">Which tools were checked</h2>
+    <p>A tool is on this page only if its own docs or repository show that it works with Claude Code. Checked on 2026-10-08:</p>
+    <ul>
+      <li><strong>Kept:</strong> WakaTime (its Claude Code plugin), Toggl (its MCP server's README names Claude Code), Harvest (its MCP article has a “For Claude Code:” section) and ccusage (its docs have a Claude Code data source page).</li>
+      <li><strong>Left out:</strong> Clockify. Its <a href="https://clockify.me/help/integrations-and-add-ons/use-clockify-mcp-server-to-connect-to-ai-agent">MCP help page</a> (checked 2026-10-08) gives a <code>claude mcp add</code> command for “Claude CLI”, but the page is labelled at its top as not yet released.</li>
+    </ul>
+    <p>Toggl and Harvest connect through MCP, which the <a href="https://code.claude.com/docs/en/mcp">Claude Code MCP docs</a> (checked 2026-10-08) describe as “an open source standard for AI-tool integrations”, and: “MCP servers give Claude Code access to your tools, databases, and APIs.”</p>
+
+    <h2 id="claude-code">Claude Code itself</h2>
+    <p><code>/usage</code> (or its alias <code>/cost</code>) and the status line show how long the current session has run and how long it waited for the model; the <a href="/guides/track-time-in-claude-code">first guide</a> quotes both. The <a href="https://code.claude.com/docs/en/costs#track-your-costs">costs page</a> (checked 2026-10-08) adds: “These totals reset when <code>/clear</code> starts a new session”. Nothing per day, client or ticket.</p>
+    <p>Where it does better: nothing to install, and the session's cost in dollars, which hourslip does not show; the example on that page starts <code>Total cost:            $0.55</code>.</p>
+
+    <h2 id="wakatime">WakaTime</h2>
+    <p>Its <a href="https://github.com/wakatime/claude-code-wakatime">plugin's README</a> (checked 2026-10-08): “Track your AI usage, lines of code generated, time spent prompting AI, etc. using the WakaTime plugin for Claude Code.” It installs as a Claude Code plugin, then reads your API key from <code>~/.wakatime.cfg</code>:</p>
+    <pre class="install">claude plugin marketplace add https://github.com/wakatime/claude-code-wakatime.git</pre>
+    <pre class="install">claude plugin i claude-code-wakatime@wakatime</pre>
+    <p>Its <a href="https://github.com/wakatime/claude-code-wakatime/blob/main/hooks/hooks.json">hooks file</a> (checked 2026-10-08) runs it on the Claude Code hook events <code>UserPromptSubmit</code>, <code>PreToolUse</code>, <code>PostToolUse</code>, <code>SubagentStop</code>, <code>PreCompact</code> and <code>SessionEnd</code>, and <a href="https://github.com/wakatime/claude-code-wakatime/blob/main/src/index.ts">its source</a> passes the session's folder to wakatime-cli as <code>--project-folder</code>. The <a href="https://wakatime.com/claude-code">WakaTime page for Claude Code</a> (checked 2026-10-08) starts with “Create a free account, then connect Claude Code using the instructions below.” and says: “WakaTime plugins collect file path and project names from your IDE.”</p>
+    <p>Where it does better: the same dashboard counts your editors too. Its <a href="https://wakatime.com/plugins">plugins page</a> (checked 2026-10-08) lists Claude Code among “Open source plugins for automatic programming metrics.” for many editors, and offers a desktop app “that lives in your system tray” for the rest. On <a href="https://wakatime.com/pricing">its pricing page</a> (checked 2026-10-08) the free plan has “1 week of dashboard history”, and Premium lists “Invoices generated from code stats”.</p>
+
+    <h2 id="toggl">Toggl</h2>
+    <p>Toggl publishes an MCP server for Toggl 2.0. Its <a href="https://www.npmjs.com/package/@togglhq/mcp">README</a> (checked 2026-10-08): “Works with any MCP client including Claude Code and Claude Desktop.” Added to Claude Code with:</p>
+    <pre class="install">claude mcp add toggl-focus -- npx @togglhq/mcp</pre>
+    <p><a href="https://docs.toggl.com/toggl-mcp-and-cl">Toggl's docs</a> (checked 2026-10-08): “The MCP server lets an AI assistant read and update your Toggl 2.0 data — tasks, projects, time entries, time blocks, reports, and more — through natural conversation.” Time entries can be listed, started, stopped, created and updated. On first use “your AI assistant prompts you to sign in with your Toggl account”, and on the free plan “Report data requests are limited to <strong>30 per month</strong>”.</p>
+    <p>So the hours are the time entries in Toggl; through the MCP server, Claude Code starts or stops a timer, or logs time, when you ask it to. Where it does better: you can time anything else with Toggl's own apps. <a href="https://docs.toggl.com/toggl-apps">Its apps page</a> (checked 2026-10-08): “Information and guides for using Toggl on desktop, mobile, and browser extensions.”</p>
+
+    <h2 id="harvest">Harvest</h2>
+    <p>The <a href="https://support.getharvest.com/hc/en-us/articles/46293697226381-Harvest-MCP">Harvest MCP article</a> (checked 2026-10-08) has a section “For Claude Code:” with this command:</p>
+    <pre class="install">claude mcp add --transport http harvest --scope user https://api.harvestapp.com/mcp</pre>
+    <p>It needs “An active Harvest account.” Once connected, “you can start and stop timers, log hours, review your time, and check on project budgets just by asking”. Reports can be “grouped by project, by client, or by person”, with this condition: “Whether you can view another teammate's time depends on your role.” The assistant can also make a draft invoice “from uninvoiced billable time and expenses on the projects you choose”, and the article adds: “reviewing and sending an invoice always happens in Harvest itself.”</p>
+    <p>Where it does better: invoices, and reports by person where your role lets you see others' time, live in the same tool as the hours, and time outside Claude Code is tracked in Harvest itself; its <a href="https://www.getharvest.com/apps-and-integrations">integrations page</a> (checked 2026-10-08) lists, for GitHub: “Track time from issues and pull requests with a Harvest browser extension.” As with Toggl, through the MCP server Claude Code starts and stops timers when you ask.</p>
+
+    <h2 id="ccusage">ccusage</h2>
+    <p>Its <a href="https://github.com/ccusage/ccusage">README</a> (checked 2026-10-08): “Analyze coding (agent) CLI token usage and costs from local data.” It runs without a global install, <code>npx ccusage@latest</code>, and its <a href="https://ccusage.com/guide/claude">Claude Code page</a> (checked 2026-10-08) says “ccusage reads Claude Code project logs from the standard Claude data directories”, with a warning: “Claude Code can retain logs for only 30 days by default.”</p>
+    <p>Its reports group tokens and estimated cost by day, week, month and session, and by project with <code>--instances</code>. Its <a href="https://ccusage.com/guide/blocks-reports">blocks report</a> (checked 2026-10-08) shows 5-hour windows: a block is “Triggered by your first message” and “Lasts exactly 5 hours from start time”. That is a window of Claude usage, not hours worked.</p>
+    <p>Where it does better: tokens and cost, per model and per project. hourslip records no tokens and no cost.</p>
+
+    <h2 id="hourslip">hourslip</h2>
+    <p>hourslip is a Claude Code mod (a plugin of function hooks) that records when you send prompts and when Claude's turns start and end, with the folder and the git branch; never prompt text or file contents, and so no tokens and no cost. The folder gives the client, from paths you set, and the branch gives the ticket. A gap of more than 45 minutes ends a stretch of work and each stretch gets a 10-minute pad; <a href="/guides/track-time-in-claude-code">how it counts</a> has the details, and <a href="/guides/timesheet-per-ticket-from-branch">the ticket guide</a> how the ticket is read.</p>
+    <p>Where it does better: no timer to start or stop and no account; hours go to a client and a ticket as you work, without your asking. The data stays on your machine until you publish a report. Free: the status line, the week pane, CSV export per day and per ticket, and a report you can print to PDF. Pro ($72 a year, or $8 billed monthly; 2 reports free, no card) adds a <a href="/guides/send-client-timesheet-to-confirm">report link</a> with an invoice on it (<a href="/guides/bill-clients-for-claude-code-hours">billing guide</a>), on which whoever holds the link can type a name to confirm the hours: “hourslip does not verify who confirms: anyone with the link can.”</p>
+
+    <h2 id="limits">What hourslip does not do</h2>
+    <ul>
+      <li>It sees only Claude Code with the mod loaded. Time away from it is there only if you add it by hand with <code>/hourslip add</code>. WakaTime covers your editors and browsers (its plugins page lists VS Code, Chrome and Firefox among others); Toggl and Harvest cover any time you start a timer for.</li>
+      <li>It counts no tokens and no cost; ccusage does.</li>
+      <li>It does not send anything to your client: you send the report link yourself. Harvest keeps invoices and their sending in the same tool as the hours.</li>
+      <li>It checks no one: the name typed on a report is whatever whoever holds the link typed.</li>
+      <li>hourslip has been checked only on Windows; macOS and Linux have not been checked.</li>
+    </ul>
+    <h2 id="related">Related</h2>
+    <ul>
+      <li><a href="/guides/track-time-in-claude-code">How to track time spent in Claude Code</a></li>
+      <li><a href="/guides/bill-clients-for-claude-code-hours">Bill clients for hours worked with Claude Code</a></li>
+      <li><a href="/guides/timesheet-per-ticket-from-branch">A timesheet per ticket from git branch names</a></li>
+      <li><a href="/guides/send-client-timesheet-to-confirm">Send your client a timesheet they can confirm</a></li>
+      <li><a href="https://code.claude.com/docs/en/mcp">Connect Claude Code to tools via MCP</a>, Claude Code docs (checked 2026-10-08)</li>
+      <li><a href="/guides">All guides</a></li>
+      <li><a href="/">Install hourslip, free</a></li>
+    </ul>
+  </main>
+
+  <footer class="site">
+    <p>hourslip, by ChuKhaLi. Support: <a href="mailto:support@hourslip.dev">support@hourslip.dev</a></p>
+    <nav aria-label="Legal">
+      <a href="/guides">Guides</a>
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/refunds">Refunds</a>
+      <a href="/contact">Contact</a>
+      <a href="https://github.com/ChuKhaLi/hourslip">GitHub</a>
+    </nav>
+    <p class="fine">© 2026 ChuKhaLi</p>
+  </footer>
+  <!--/email_off-->
+</body>
+</html>

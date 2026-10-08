@@ -9,7 +9,7 @@ const between = (html: string, a: string, b: string) => html.slice(html.indexOf(
 
 test('no page runs script or carries inline style', () => {
   for (const p of PAGES) {
-    const html = read(p)
+    const html = read(p).replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g, '')
     expect(html, p).not.toMatch(/<script|<style|\sstyle=|\son[a-z]+=/i)
   }
 })
@@ -24,7 +24,7 @@ test('every page shares the header and the footer of index.html', () => {
 test('every page links the stylesheet and carries the support address as text and link', () => {
   for (const p of PAGES) {
     const html = read(p)
-    expect(html, p).toContain('<link rel="stylesheet" href="/style.v1.css">')
+    expect(html, p).toContain('<link rel="stylesheet" href="/style.v2.css">')
     expect(html, p).toContain('<a href="mailto:support@hourslip.dev">support@hourslip.dev</a>')
     expect(html, p).toContain('<!--email_off-->')
   }
@@ -118,4 +118,11 @@ test("refunds promise the plan's price, not a full refund the conversion fee wou
   const html = read('refunds.html')
   expect(html).toContain('the conversion fee is not refunded')
   expect(html).not.toMatch(/full refund\b(?! of the plan's price)/i)
+})
+test('the home page shows the demo GIF with a caption that says it is a sample', () => {
+  const html = read('index.html')
+  expect(html).toMatch(/<img src="\/demo\.gif" width="\d+" height="\d+" loading="lazy" alt="[^"]{20,}">/)
+  expect(html).toContain('A sample client and a local test server')
+  // the ⚠ prefix, as seen in the recording (spike docs/spikes/2026-10-07-demo-gif.md)
+  expect(html).toContain("recorded in Claude Code 2.1.293. In this recording, Claude Code draws a plugin's status line with ⚠ and the plugin's name.</figcaption>")
 })

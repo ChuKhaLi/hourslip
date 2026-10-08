@@ -2,6 +2,7 @@ import { describe, expect, test } from 'claude-code/testing'
 import { SESSION, world } from './fixtures/world.ts'
 
 const RULES = JSON.stringify({ v: 1, tzOffsetMinutes: 420, clients: [{ id: 'acme', name: 'ACME', paths: ['/work/acme/**'], ticketPattern: 'ACME-\\d+' }] })
+const run = ($: any, args: string) => $.command.run({ command: 'hourslip', args })
 const prompt = { text: 'x', wait: false, origin: { kind: 'composer' } } as const
 
 describe('status line', () => {
@@ -27,6 +28,25 @@ describe('status line', () => {
     const w = world(on, { cwd: '/elsewhere', files: { '/home/dev/.hourslip/rules.json': RULES } })
     await $.session.start(SESSION)
     expect(w.statuses.at(-1)).toBe('⏱ unassigned · 0h00 today')
+  })
+  test('/hourslip add redraws the status line with the added time, before the next prompt', async ($, on) => {
+    const w = world(on, { files: { '/home/dev/.hourslip/rules.json': RULES } })
+    await $.session.start(SESSION)
+    await $.prompt.submit(prompt)
+    expect(w.statuses.at(-1)).toBe('⏱ ACME · ACME-182 · 0h10 today')
+    const out = await run($, 'add 30m acme "Call"')
+    expect(out.text).toMatch(/Added 0h30 by hand for ACME/)
+    expect(w.statuses.at(-1)).toBe('⏱ ACME · ACME-182 · 0h40 today')
+  })
+  test('a command that fails still redraws, and its reply is unchanged', async ($, on) => {
+    const w = world(on, { files: { '/home/dev/.hourslip/rules.json': RULES } })
+    await $.session.start(SESSION)
+    await $.prompt.submit(prompt)
+    const before = w.statuses.length
+    const out = await run($, 'add 30m nope "x"')
+    expect(out.text).toMatch(/Unknown client "nope"/)
+    expect(w.statuses.length).toBe(before + 1)
+    expect(w.statuses.at(-1)).toBe('⏱ ACME · ACME-182 · 0h10 today')
   })
   test('after a recording failure clears, the normal text returns', async ($, on) => {
     const w = world(on, { cwd: '/elsewhere', files: { '/home/dev/.hourslip/rules.json': RULES }, failWritesOnce: true })

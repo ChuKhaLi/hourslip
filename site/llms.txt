@@ -20,6 +20,15 @@ If the first line fails to clone the repository (git may try SSH), give the full
 
     claude plugin marketplace add https://github.com/ChuKhaLi/hourslip.git
 
+## Guides
+
+- Guides: https://hourslip.dev/guides
+- How to track time spent in Claude Code: https://hourslip.dev/guides/track-time-in-claude-code
+- Bill clients for hours worked with Claude Code: https://hourslip.dev/guides/bill-clients-for-claude-code-hours
+- A timesheet per ticket from git branch names: https://hourslip.dev/guides/timesheet-per-ticket-from-branch
+- Send your client a timesheet they can confirm: https://hourslip.dev/guides/send-client-timesheet-to-confirm
+- Time trackers for Claude Code: WakaTime, Toggl, ccusage and hourslip: https://hourslip.dev/guides/claude-code-time-trackers
+
 ## Links
 
 - Sample report: https://hourslip.dev/sample

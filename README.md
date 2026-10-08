@@ -5,6 +5,10 @@ Code mod (a plugin of function hooks). It records when you work, attributes the 
 the folder you are in and to a ticket by the git branch, and exports a timesheet as CSV plus an HTML
 report you can print to PDF.
 
+![hourslip in a Claude Code session](https://hourslip.dev/demo.gif)
+
+A sample client and a local test server; recorded in Claude Code 2.1.293. In this recording, Claude Code draws a plugin's status line with ⚠ and the plugin's name.
+
 Site and sample report: https://hourslip.dev. This repository is the public mirror of hourslip's source,
 published under FSL-1.1-MIT (see LICENSE.md).
 

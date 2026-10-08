@@ -10,7 +10,7 @@
   <meta name="theme-color" content="#1a1712" media="(prefers-color-scheme: dark)">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="/fonts/source-serif-4-latin-wght.v1.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="/style.v1.css">
+  <link rel="stylesheet" href="/style.v2.css">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="hourslip">
   <meta property="og:url" content="https://hourslip.dev/">
@@ -55,6 +55,14 @@ claude plugin install hourslip@hourslip</pre>
         </figure>
       </div>
     </div>
+
+    <section class="wrap" aria-labelledby="see">
+      <h2 id="see">See it</h2>
+      <figure class="gif">
+        <img src="/demo.gif" width="1000" height="540" loading="lazy" alt="A Claude Code session: the hourslip status line shows today's time for ACME Corp, /hourslip publish shows a summary, --confirm prints a link that is copied, and /hourslip then shows the report as confirmed by Dana Client (link holder, unverified).">
+        <figcaption>A sample client and a local test server; recorded in Claude Code 2.1.293. In this recording, Claude Code draws a plugin's status line with ⚠ and the plugin's name.</figcaption>
+      </figure>
+    </section>
 
     <div class="wrap">
       <section id="how">
@@ -139,6 +147,7 @@ claude plugin install hourslip@hourslip</pre>
   <footer class="site">
     <p>hourslip, by ChuKhaLi. Support: <a href="mailto:support@hourslip.dev">support@hourslip.dev</a></p>
     <nav aria-label="Legal">
+      <a href="/guides">Guides</a>
       <a href="/terms">Terms</a>
       <a href="/privacy">Privacy</a>
       <a href="/refunds">Refunds</a>

@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How to track time spent in Claude Code | hourslip</title>
+  <meta name="description" content="What Claude Code shows about time (/usage, /cost, the status line, telemetry, files on disk), WakaTime, a timer, and hours per client and ticket with hourslip.">
+  <link rel="canonical" href="https://hourslip.dev/guides/track-time-in-claude-code">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="hourslip">
+  <meta property="og:url" content="https://hourslip.dev/guides/track-time-in-claude-code">
+  <meta property="og:title" content="How to track time spent in Claude Code">
+  <meta property="og:description" content="Session durations from /usage and the status line, active time from telemetry, prompt timestamps on disk, and hours per client and ticket.">
+  <meta property="og:image" content="https://hourslip.dev/og/track-time-in-claude-code.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://hourslip.dev/og/track-time-in-claude-code.png">
+  <meta name="theme-color" content="#f6f1e7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1a1712" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/fonts/source-serif-4-latin-wght.v1.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/style.v2.css">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"TechArticle","headline":"How to track time spent in Claude Code","description":"What Claude Code shows about time (/usage, /cost, the status line, telemetry, files on disk), WakaTime, a timer, and hours per client and ticket with hourslip.","url":"https://hourslip.dev/guides/track-time-in-claude-code","dateModified":"2026-10-08","author":{"@type":"Organization","name":"ChuKhaLi"}}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"hourslip","item":"https://hourslip.dev/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://hourslip.dev/guides"},{"@type":"ListItem","position":3,"name":"How to track time spent in Claude Code","item":"https://hourslip.dev/guides/track-time-in-claude-code"}]}
+  </script>
+</head>
+<body>
+  <!--email_off-->
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site">
+    <a class="brand" href="/"><svg class="mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect x="7" y="4" width="18" height="24" rx="2" fill="none" stroke="currentColor" stroke-width="3"/><path d="M11 11h10M11 16h10M11 21h6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>hourslip</a>
+    <nav aria-label="Site">
+      <a href="/#how">How it works</a>
+      <a href="/sample">Sample report</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="https://github.com/ChuKhaLi/hourslip">GitHub</a>
+    </nav>
+  </header>
+
+  <main id="main" class="legal">
+    <h1>How to track time spent in Claude Code</h1>
+    <p class="updated">Last updated <time datetime="2026-10-08">2026-10-08</time>. Claude Code docs checked 2026-10-08.</p>
+    <p><strong>The short answer.</strong> Claude Code reports how long a session has run and how long it waited for the model: run <code>/usage</code> (or its alias <code>/cost</code>), or show the duration in your status line. Both are totals for one session. For hours per day or per project, read the timestamps Claude Code keeps on disk, export its active-time metric, run a timer, or use a plugin that records as you work.</p>
+
+    <h2 id="claude-code">What Claude Code itself shows</h2>
+    <p>The <a href="https://code.claude.com/docs/en/commands">commands reference</a> lists <code>/cost</code> as “Alias for <code>/usage</code>”. The <a href="https://code.claude.com/docs/en/costs#track-your-costs">costs page</a> says: “The Session block at the top of <code>/usage</code> shows detailed token usage statistics for your current session.” Its example:</p>
+    <pre class="install">Total cost:            $0.55
+Total duration (API):  6m 20s
+Total duration (wall): 6h 33m 10s
+Total code changes:    0 lines added, 0 lines removed
+Usage by model:
+   claude-sonnet-4-6:  1.2k input, 5.3k output, 940.0k cache read, 50.0k cache write ($0.55)</pre>
+    <p>Two durations, then: wall time and API time. The same page adds: “These totals reset when <code>/clear</code> starts a new session”.</p>
+    <p>The <a href="https://code.claude.com/docs/en/statusline#cost-and-duration-tracking">status line</a> can show the same kind of numbers all the time. Its field <code>cost.total_duration_ms</code> is “Total wall-clock time the session has been running, in milliseconds. Accumulates across resumes and doesn't include time while the session isn't running”, and <code>cost.total_api_duration_ms</code> is “Total time spent waiting for API responses in milliseconds”.</p>
+    <p>That answers how long a session has been going. Neither number names a client or a ticket.</p>
+
+    <h2 id="telemetry">Active time, from telemetry</h2>
+    <p>Claude Code can export metrics through OpenTelemetry, one of which is <code>claude_code.active_time.total</code>, in seconds. The <a href="https://code.claude.com/docs/en/monitoring-usage#active-time-counter">monitoring docs</a> describe it: “Tracks actual time spent actively using Claude Code, excluding idle time. This metric is incremented during user interactions, such as typing and reading responses, and during CLI processing, such as tool execution and AI response generation.” You need somewhere to send it; the setup on that page starts with <code>export CLAUDE_CODE_ENABLE_TELEMETRY=1</code> and an exporter.</p>
+
+    <h2 id="files">The timestamps on disk</h2>
+    <p>Claude Code writes its <a href="https://code.claude.com/docs/en/claude-directory#application-data">application data</a> under <code>~/.claude</code>. Two kinds of file matter here:</p>
+    <ul>
+      <li><code>projects/&lt;project&gt;/&lt;session&gt;.jsonl</code>: “Full conversation transcript: every message, tool call, and tool result”. The <a href="https://code.claude.com/docs/en/data-usage">data usage page</a> says Claude Code clients “store session transcripts locally in plaintext under <code>~/.claude/projects/</code> for 30 days by default”, and: “Adjust the period with <code>cleanupPeriodDays</code>.”</li>
+      <li><code>history.jsonl</code>: “Every prompt you've typed, with timestamp and project path.” It is listed under <a href="https://code.claude.com/docs/en/claude-directory#kept-until-you-delete-them">kept until you delete them</a>.</li>
+    </ul>
+    <p>From the prompt timestamps per project you can rebuild a day by hand: group prompts that are close together and count each group as one stretch of work. hourslip, below, does that as you work.</p>
+
+    <h2 id="wakatime">WakaTime</h2>
+    <p>WakaTime has a Claude Code plugin. Its <a href="https://github.com/wakatime/claude-code-wakatime">README</a> (checked 2026-10-08): “Track your AI usage, lines of code generated, time spent prompting AI, etc. using the WakaTime plugin for Claude Code.” It installs as a Claude Code plugin:</p>
+    <pre class="install">claude plugin marketplace add https://github.com/wakatime/claude-code-wakatime.git</pre>
+    <pre class="install">claude plugin i claude-code-wakatime@wakatime</pre>
+    <p>The <a href="https://wakatime.com/claude-code">WakaTime page for Claude Code</a> (checked 2026-10-08) starts with “Create a free account, then connect Claude Code using the instructions below.”</p>
+
+    <h2 id="timer">A timer</h2>
+    <p>A stopwatch, or any time tracker you start when you sit down and stop when you get up. It also counts what happens outside Claude Code: the call with the client, the testing in a browser. It knows only what you remember to start and stop, and you split it by client yourself.</p>
+
+    <h2 id="hourslip">Hours per client and ticket: hourslip</h2>
+    <p>hourslip is a Claude Code mod (a plugin of function hooks) that records when you send prompts and when Claude's turns start and end, with the folder and the git branch; never prompt text or file contents. The folder gives the client (from paths you set) and the branch gives the ticket: <code>feat/ACME-182-login</code> gives <code>ACME-182</code>. It counts time like this:</p>
+    <ul>
+      <li>A gap of more than 45 minutes between events ends a stretch of work.</li>
+      <li>Each stretch runs from its first event to 10 minutes after its last (a 10-minute pad), or to the session's end if that comes first. A lone prompt counts 10 minutes.</li>
+      <li>Opening Claude Code without sending a prompt counts nothing.</li>
+      <li>“Claude” time is each turn, from its start to its end.</li>
+    </ul>
+    <p>For example, a prompt at 9:00 that Claude works on until 9:20, then nothing until a prompt at 11:00, gives 9:00–9:30 and 11:00–11:10: 40 minutes, of which Claude worked 20. Had the second prompt come at 10:00, the gap would be under 45 minutes and the morning would be one stretch, 9:00–10:10.</p>
+    <figure>
+      <svg viewBox="0 0 400 210" role="img" aria-labelledby="d-title d-desc">
+        <title id="d-title">How hourslip counts a morning</title>
+        <desc id="d-desc">A prompt at 9:00, Claude working until 9:20, and a prompt at 11:00 give two measured stretches, 9:00 to 9:30 and 11:00 to 11:10, 40 minutes in all. Claude's turn covers 9:00 to 9:20.</desc>
+        <text x="40" y="34" fill="currentColor" font-family="inherit" font-size="15">Measured: 40 minutes</text>
+        <rect x="40" y="44" width="75" height="26" rx="6" fill="currentColor" fill-opacity="0.18"/>
+        <rect x="40" y="44" width="75" height="26" rx="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <rect x="340" y="44" width="25" height="26" rx="6" fill="currentColor" fill-opacity="0.18"/>
+        <rect x="340" y="44" width="25" height="26" rx="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <text x="40" y="104" fill="currentColor" font-family="inherit" font-size="15">Claude working: 20 minutes</text>
+        <rect x="40" y="114" width="50" height="26" rx="6" fill="currentColor" fill-opacity="0.08"/>
+        <rect x="40" y="114" width="50" height="26" rx="6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <path d="M40 170 H365" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.5"/>
+        <path d="M40 164 V176 M190 164 V176 M340 164 V176" fill="none" stroke="currentColor" stroke-opacity="0.6" stroke-width="1.5"/>
+        <text x="40" y="196" text-anchor="middle" fill="currentColor" font-family="inherit" font-size="15">9:00</text>
+        <text x="190" y="196" text-anchor="middle" fill="currentColor" font-family="inherit" font-size="15">10:00</text>
+        <text x="340" y="196" text-anchor="middle" fill="currentColor" font-family="inherit" font-size="15">11:00</text>
+      </svg>
+      <figcaption>The 10 minutes after each last event count; the gap between the stretches does not.</figcaption>
+    </figure>
+    <p>The status line shows today's time for the client of the folder you are in. After one prompt in a sample project (ACME Corp, branch <code>feat/ACME-182-login</code>) it read <code>⏱ ACME Corp · ACME-182 · 0h10 today</code>. Time away from Claude Code is added by hand, and <code>/hourslip</code> shows the week:</p>
+    <figure class="term" role="img" aria-label="A Claude Code session: thirty minutes added by hand for a call with ACME Corp, then the week showing 0h40 for Thursday, ten minutes measured and thirty added; the status line reads 0h40 today.">
+      <div class="term-bar">acme · feat/ACME-182-login</div>
+      <pre class="term-body">❯ /hourslip add 30m acme "Call with ACME"
+  ⎿  hourslip: Added 0h30 by hand for ACME Corp on 2026-10-08. Reports label it "added by hand".
+
+❯ /hourslip
+  ⎿  hourslip: Week of 2026-10-05
+     Thu 10-08  ACME Corp 0h40 (Claude 0h00)
+     Total      ACME Corp 0h40</pre>
+      <div class="term-status">⏱ ACME Corp · ACME-182 · 0h40 today</div>
+    </figure>
+    <p class="updated">Captured in Claude Code 2.1.293 on Windows, 2026-10-08, with a sample client (hourslip 0.2.2). The status line read 0h40 as soon as the 30 minutes were added, before the next prompt.</p>
+    <p>Every hourslip report carries the same line: “Measured from Claude Code activity. Time outside Claude Code, such as meetings or manual testing, appears only where it was added by hand, and is labelled so.”</p>
+    <h2 id="limits">What hourslip does not do</h2>
+    <ul>
+      <li>Time away from Claude Code is not seen unless added by hand with <code>/hourslip add</code>: meetings, calls, testing in a browser, thinking away from the keyboard.</li>
+      <li>Hours exist only for time spent in Claude Code with the mod loaded. A session where an organization policy disables mods records nothing.</li>
+      <li>A stretch ends 10 minutes after its last event. Reading or testing for longer than that without a prompt counts only up to that pad.</li>
+      <li>Timestamps come from your own clock and are trusted: the hours are a lower bound, not a tamper-proof record.</li>
+      <li>hourslip has been checked only on Windows; macOS and Linux have not been checked.</li>
+    </ul>
+    <h2 id="related">Related</h2>
+    <ul>
+      <li><a href="/guides">All guides</a></li>
+      <li><a href="/sample">A sample hourslip report</a></li>
+      <li><a href="https://code.claude.com/docs/en/costs">Manage costs effectively</a>, Claude Code docs</li>
+      <li><a href="/">Install hourslip, free</a></li>
+    </ul>
+  </main>
+
+  <footer class="site">
+    <p>hourslip, by ChuKhaLi. Support: <a href="mailto:support@hourslip.dev">support@hourslip.dev</a></p>
+    <nav aria-label="Legal">
+      <a href="/guides">Guides</a>
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/refunds">Refunds</a>
+      <a href="/contact">Contact</a>
+      <a href="https://github.com/ChuKhaLi/hourslip">GitHub</a>
+    </nav>
+    <p class="fine">© 2026 ChuKhaLi</p>
+  </footer>
+  <!--/email_off-->
+</body>
+</html>
