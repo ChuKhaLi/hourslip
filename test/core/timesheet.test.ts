@@ -18,7 +18,7 @@ const build = (sessions: EventLine[][], manual = []) => buildTimesheet({ session
 describe('buildTimesheet', () => {
   test('two windows on the same client bill the overlap once', () => {
     const t = build([[p('a', 0), p('a', 30)], [p('b', 10), p('b', 40)]])
-    expect(t.rows).toEqual([{ date: '2026-10-05', client: 'acme', ticket: null, presenceMinutes: 50, claudeMinutes: 0, manualMinutes: 0, overlap: false, capped: false }])
+    expect(t.rows).toEqual([{ date: '2026-10-05', client: 'acme', ticket: null, presenceMinutes: 50, claudeMinutes: 0, manualMinutes: 0, overlap: false, capped: false, imported: false }])
     expect(t.overlapDates).toEqual([])
   })
   test('two windows on different clients split the overlap equally and flag it', () => {
@@ -108,5 +108,29 @@ describe('buildTimesheet', () => {
   test('rows sort by date, then client with Unassigned last, then ticket', () => {
     const t = build([[p('a', 0, '/x')], [p('b', 0, '/w/beta')], [p('c', 0, '/w/acme')]])
     expect(t.rows.map(r => r.client)).toEqual(['acme', 'beta', null])
+  })
+  test('a row is imported when any of its time comes from a transcript session', () => {
+    const tr = { src: 'transcript' as const }
+    const t = build([
+      [p('a', 0), p('a', 30)],
+      [p('b', 60, '/w/acme', tr), p('b', 70, '/w/acme', tr)],
+      [p('c', 0, '/w/beta', tr), p('c', 20, '/w/beta', tr)],
+      [p('d', 24 * 60), p('d', 24 * 60 + 30)],
+    ])
+    const at = (date: string, client: string) => t.rows.find(r => r.date === date && r.client === client)
+    expect(at('2026-10-05', 'acme')?.imported).toBe(true)
+    expect(at('2026-10-05', 'beta')?.imported).toBe(true)
+    expect(at('2026-10-06', 'acme')?.imported).toBe(false)
+  })
+  test("a transcript session for another client does not mark this client's row", () => {
+    const tr = { src: 'transcript' as const }
+    const t = build([[p('a', 0), p('a', 30)], [p('c', 0, '/w/beta', tr), p('c', 20, '/w/beta', tr)]])
+    expect(t.rows.find(r => r.client === 'acme')?.imported).toBe(false)
+    expect(t.rows.find(r => r.client === 'beta')?.imported).toBe(true)
+  })
+  test('Claude time from a transcript turn marks the row imported', () => {
+    const tr = { src: 'transcript' as const }
+    const t = build([[p('a', 0, '/w/acme', { kind: 'turn-start', turn: 't', ...tr }), p('a', 7, '/w/acme', { kind: 'turn-end', turn: 't', ...tr })]])
+    expect(t.rows[0]).toMatchObject({ claudeMinutes: 7, imported: true })
   })
 })

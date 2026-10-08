@@ -26,7 +26,7 @@ export function daysCsv(ts: Timesheet, rules: Rules, client: string | null | und
     const p = rs.reduce((s, r) => s + r.presenceMinutes, 0)
     const cl = rs.reduce((s, r) => s + r.claudeMinutes, 0)
     const m = rs.reduce((s, r) => s + r.manualMinutes, 0)
-    const flags = [rs.some(r => r.overlap) ? 'overlap' : '', rs.some(r => r.capped) ? 'capped' : ''].filter(Boolean).join(' ')
+    const flags = [rs.some(r => r.overlap) ? 'overlap' : '', rs.some(r => r.capped) ? 'capped' : '', rs.some(r => r.imported) ? 'imported' : ''].filter(Boolean).join(' ')
     out.push([date, DAYS[weekdayIndex(date)], clientName(rules, c), hours(p, L), hours(cl, L), hours(m, L), hours(p + m, L), flags])
   }
   if (client !== undefined) {
@@ -45,7 +45,7 @@ export function ticketsCsv(ts: Timesheet, rules: Rules, manual: ManualLine[], cl
   const L = rules.csv
   const out: string[][] = [['Date', 'Client', 'Ticket', 'Measured hours', 'Claude hours', 'Manual hours', 'Notes']]
   for (const r of pick(ts, client, from, to)) {
-    const notes = manual.filter(m => m.date === r.date && m.client === r.client && m.ticket === r.ticket).map(m => `${m.note} (added by hand)`).join('; ')
+    const notes = manual.filter(m => m.date === r.date && m.client === r.client && m.ticket === r.ticket).map(m => `${m.note} (added by hand)`).concat(r.imported ? ['imported'] : []).join('; ')
     out.push([r.date, clientName(rules, r.client), r.ticket ?? '', hours(r.presenceMinutes, L), hours(r.claudeMinutes, L), hours(r.manualMinutes, L), notes])
   }
   return toCsv(out, L)

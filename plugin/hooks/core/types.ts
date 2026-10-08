@@ -13,6 +13,7 @@ export type EventLine = {
   turn?: string
   agent?: string
   tag?: Tag
+  src?: 'transcript'
 }
 
 export type ManualLine = {
@@ -53,6 +54,7 @@ export type Row = {
   manualMinutes: number
   overlap: boolean
   capped: boolean
+  imported: boolean
 }
 
 export type TicketSource = { client: string; ticket: string; branch: string; cwd: string }

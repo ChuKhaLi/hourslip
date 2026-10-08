@@ -6,8 +6,8 @@ import type { Rules, Timesheet } from '../../plugin/hooks/core/types.ts'
 const rules: Rules = { ...DEFAULT_RULES, clients: [{ id: 'acme', name: 'ACME; "Corp"\nLtd', paths: [], rate: null, ticketPattern: null }] }
 const ts: Timesheet = {
   rows: [
-    { date: '2026-10-05', client: 'acme', ticket: 'A-1', presenceMinutes: 90, claudeMinutes: 30, manualMinutes: 0, overlap: false, capped: false },
-    { date: '2026-10-05', client: 'acme', ticket: null, presenceMinutes: 0, claudeMinutes: 0, manualMinutes: 45, overlap: true, capped: false },
+    { date: '2026-10-05', client: 'acme', ticket: 'A-1', presenceMinutes: 90, claudeMinutes: 30, manualMinutes: 0, overlap: false, capped: false, imported: false },
+    { date: '2026-10-05', client: 'acme', ticket: null, presenceMinutes: 0, claudeMinutes: 0, manualMinutes: 45, overlap: true, capped: false, imported: false },
   ],
   ticketSources: [], overlapDates: ['2026-10-05'], cappedDates: [],
 }
@@ -44,5 +44,22 @@ describe('ticketsCsv', () => {
       '2026-10-05,"ACME; ""Corp""\nLtd",,0.00,0.00,0.75,Call (added by hand)',
       '',
     ])
+  })
+  test('an imported row says imported in Notes, after any manual note', () => {
+    const imp: Timesheet = { ...ts, rows: ts.rows.map(r => ({ ...r, imported: true })) }
+    const csv = ticketsCsv(imp, rules, [{ v: 1, date: '2026-10-05', minutes: 45, client: 'acme', ticket: null, note: 'Call' }], 'acme', '2026-10-01', '2026-10-31')
+    expect(csv.split('\r\n')).toEqual([
+      '\ufeffDate,Client,Ticket,Measured hours,Claude hours,Manual hours,Notes',
+      '2026-10-05,"ACME; ""Corp""\nLtd",A-1,1.50,0.50,0.00,imported',
+      '2026-10-05,"ACME; ""Corp""\nLtd",,0.00,0.00,0.75,Call (added by hand); imported',
+      '',
+    ])
+  })
+})
+
+describe('daysCsv imported', () => {
+  test('an imported day says imported in Flags', () => {
+    const imp: Timesheet = { ...ts, rows: [{ ...ts.rows[0], imported: true }, ts.rows[1]] }
+    expect(daysCsv(imp, rules, undefined, '2026-10-04', '2026-10-05').split('\r\n')[1]).toBe('2026-10-05,Mon,"ACME; ""Corp""\nLtd",1.50,0.50,0.75,2.25,overlap imported')
   })
 })

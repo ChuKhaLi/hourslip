@@ -9,7 +9,8 @@ import { weekLines } from '../core/summary.ts'
 import { buildTimesheet } from '../core/timesheet.ts'
 import { ReadError, appendManual, readManual, readRules, readRulesStrict, readSessions, writeRules } from './files.ts'
 import { monthData, snapshotFor } from './report-data.ts'
-import { homeDir, type CommandEngine, type PaneEngine, type PublishEngine } from './paths.ts'
+import { importConfirm, importPreview, importUndo, type ImportReply } from './importing.ts'
+import { homeDir, type CommandEngine, type ImportEngine, type PaneEngine, type PublishEngine } from './paths.ts'
 import { keyForget, keyInfo, keySet, keyShow, portal, publish, refreshStatuses, subscribe, unpublish } from './publishing.ts'
 import type { Recorder } from './recorder.ts'
 
@@ -49,18 +50,21 @@ async function writeExport($: CommandEngine, path: string, text: string): Promis
   }
 }
 
-export async function runCommand($: PublishEngine, recorder: Recorder, args: string): Promise<{ text: string; openPane: boolean }> {
+/** `/hourslip`'s engine: everything a subcommand reaches, the import's transcripts included. */
+export type HourslipEngine = PublishEngine & ImportEngine
+
+export async function runCommand($: HourslipEngine, recorder: Recorder, args: string): Promise<ImportReply> {
   try {
     return await run($, recorder, args)
   } catch (err) {
     if (err instanceof ReadError) return { text: err.message, openPane: false }
     // The publishing commands answer in text whatever goes wrong; the older ones keep today's behaviour.
-    if (['publish', 'unpublish', 'subscribe', 'portal', 'key'].includes(tokenize(args)[0] ?? '')) return { text: errorText(err), openPane: false }
+    if (['publish', 'unpublish', 'subscribe', 'portal', 'key', 'import'].includes(tokenize(args)[0] ?? '')) return { text: errorText(err), openPane: false }
     throw err
   }
 }
 
-async function run($: PublishEngine, recorder: Recorder, args: string): Promise<{ text: string; openPane: boolean }> {
+async function run($: HourslipEngine, recorder: Recorder, args: string): Promise<ImportReply> {
   const cmd = parseCommand(args)
   const { home, r, rules, today } = await context($, cmd.kind !== 'pane' && cmd.kind !== 'tz' && cmd.kind !== 'error')
   const rulesBroken = !r.ok ? `${r.error}. Fix rules.json first.` : null
@@ -131,6 +135,12 @@ async function run($: PublishEngine, recorder: Recorder, args: string): Promise<
       if (rulesBroken) return { text: rulesBroken, openPane: false }
       if (!known(cmd.client)) return { text: unknown(cmd.client), openPane: false }
       return publish($, { home, rules, today }, cmd)
+    }
+    case 'import': {
+      if (cmd.mode === 'undo') return importUndo($, { home })
+      if (rulesBroken) return { text: rulesBroken, openPane: false }
+      const ctx = { home, rules, today, tz: rules.tzOffsetMinutes ?? -new Date().getTimezoneOffset() }
+      return cmd.mode === 'confirm' ? importConfirm($, ctx) : importPreview($, ctx)
     }
     case 'subscribe': return subscribe($, cmd.plan)
     case 'portal': return portal($)

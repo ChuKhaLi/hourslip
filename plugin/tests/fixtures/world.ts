@@ -6,8 +6,15 @@ export const norm = (p: string) => p.replace(/\\/g, '/').replace(/^[A-Za-z]:/, '
 
 export const T0 = Date.parse('2026-10-05T02:00:00Z')
 
+/** UTF-8 bytes, as the engine's stat and 4 MiB limit count them. */
+const bytes = (t: string) => new TextEncoder().encode(t).length
+const MAX_READ = 4 * 1024 * 1024
+
+/** What world()'s `process.spawn` answers for one file: its text in pieces, and the exit code. */
+export type SpawnAnswer = (text: string, argv: string[]) => { pieces: string[]; code?: number | null }
+
 /** An in-memory disk under HOME=/home/dev, a fixed session, a clock at T0. */
-export function world(on: On, opts: { files?: Record<string, string>; cwd?: string; branchHead?: string | null; failWrites?: boolean; failWritesOnce?: boolean; busyReads?: number; failWritePattern?: RegExp; failWriteMessage?: string; gitThrows?: boolean; copyThrows?: boolean; copyRefused?: boolean; reportsStoreThrows?: boolean; storeSeed?: Record<string, unknown>; busyOnce?: RegExp; env?: Record<string, string>; http?: (method: string, url: string, body: string | undefined, headers: Record<string, string>) => { status: number; body?: unknown; text?: string } } = {}) {
+export function world(on: On, opts: { files?: Record<string, string>; cwd?: string; branchHead?: string | null; failWrites?: boolean; failWritesOnce?: boolean; busyReads?: number; failWritePattern?: RegExp; failWriteMessage?: string; gitThrows?: boolean; copyThrows?: boolean; copyRefused?: boolean; reportsStoreThrows?: boolean; storeSeed?: Record<string, unknown>; busyOnce?: RegExp; env?: Record<string, string>; now?: number; spawn?: SpawnAnswer; http?: (method: string, url: string, body: string | undefined, headers: Record<string, string>) => { status: number; body?: unknown; text?: string } } = {}) {
   const files = new Map<string, string>(Object.entries(opts.files ?? {}).map(([k, v]) => [norm(k), v]))
   let failOnce = opts.failWritesOnce ?? false
   let busy = opts.busyReads ?? 0
@@ -17,7 +24,11 @@ export function world(on: On, opts: { files?: Record<string, string>; cwd?: stri
   const toasts: string[] = []
   const panes: string[] = []
   const runs: string[][] = []
-  const clock = mock.clock(on, { now: T0 })
+  const clock = mock.clock(on, { now: opts.now ?? T0 })
+  const spawns: string[][] = []
+  const reads: string[] = []
+  const titles: (string | undefined)[] = []
+  const states: { key: string; value: unknown }[] = []
   mock.env(on, { HOME: '/home/dev', ...opts.env })
   if (opts.reportsStoreThrows || opts.storeSeed) {
     // mock.store can neither be overridden (on() twice is refused) nor pre-filled, so these options replace it: set fails for 'reports', or the store starts with storeSeed.
@@ -32,12 +43,32 @@ export function world(on: On, opts: { files?: Record<string, string>; cwd?: stri
   on('session.cwd', () => ({ value: cwd }))
   on('session.repo', () => ({ value: opts.branchHead === null ? null : { root: cwd, remote: null, internal: false, name: null } }))
   on('fs.read', ($, e) => {
+    reads.push(norm(e.path))
     if (busy > 0 && e.path.endsWith('.jsonl')) { busy--; throw new Error('EBUSY') }
     if (busyOnce?.test(norm(e.path))) { busyOnce = undefined; throw new Error('EBUSY') }
     const text = files.get(norm(e.path))
     if (text === undefined) throw new Error(`ENOENT: ${e.path}`)
+    // The engine refuses a read over 4 MiB; so does this disk.
+    if (bytes(text) > MAX_READ) throw new Error(`EFBIG: ${e.path} is over 4 MiB`)
     return { value: text }
   })
+  on('fs.stat', ($, e) => {
+    const text = files.get(norm(e.path))
+    if (text === undefined) throw new Error(`ENOENT: ${e.path}`)
+    return { value: { kind: 'file' as const, size: bytes(text), mtimeMs: T0, isLink: false } }
+  })
+  // No spawn answer: the kit has no implementation, so `$.process.spawn` rejects its first pull (the desktop app's case).
+  if (opts.spawn) {
+    const answer = opts.spawn
+    on('process.spawn', async function* (_$, e) {
+      spawns.push([...e.argv])
+      const text = files.get(norm(e.argv[e.argv.length - 1]))
+      if (text === undefined) return { value: { code: 1, signal: null } } as never
+      const { pieces, code = 0 } = answer(text, [...e.argv])
+      for (const t of pieces) if (t !== '') yield { stream: 'stdout' as const, text: t }
+      return { value: { code, signal: null } } as never
+    })
+  }
   on('fs.write', ($, e) => {
     if (opts.failWrites || opts.failWritePattern?.test(e.path)) {
       // A thrown hook is skipped by the kit; { deny } is how a refusal reaches the caller with its text.
@@ -52,9 +83,14 @@ export function world(on: On, opts: { files?: Record<string, string>; cwd?: stri
   on('fs.exists', ($, e) => ({ value: files.has(norm(e.path)) }))
   on('fs.list', ($, e) => {
     const dir = norm(e.path).replace(/\/$/, '') + '/'
-    const names = [...files.keys()].filter(k => k.startsWith(dir) && !k.slice(dir.length).includes('/'))
-    if (names.length === 0) throw new Error(`ENOENT: ${e.path}`)
-    return { value: names.map(k => ({ name: k.slice(dir.length), kind: 'file' as const, size: files.get(k)!.length, mtimeMs: T0, isLink: false })) }
+    const under = [...files.keys()].filter(k => k.startsWith(dir))
+    if (under.length === 0) throw new Error(`ENOENT: ${e.path}`)
+    const names = under.filter(k => !k.slice(dir.length).includes('/'))
+    const dirs = [...new Set(under.filter(k => k.slice(dir.length).includes('/')).map(k => k.slice(dir.length).split('/')[0]))]
+    return { value: [
+      ...names.map(k => ({ name: k.slice(dir.length), kind: 'file' as const, size: bytes(files.get(k)!), mtimeMs: T0, isLink: false })),
+      ...dirs.map(name => ({ name, kind: 'dir' as const, size: 0, mtimeMs: T0, isLink: false })),
+    ] }
   })
   on('ui.status', ($, e) => { statuses.push(e.text); return { value: undefined } })
   on('ui.toast', ($, e) => { toasts.push(e.text); return { value: undefined } })
@@ -65,7 +101,9 @@ export function world(on: On, opts: { files?: Record<string, string>; cwd?: stri
   on('turn.complete', () => ({ text: '' }))
   on('session.end', () => ({ sessionId: 'sess-1' }))
   on('command.register', (_$, e) => ({ value: { command: e.name } }))
-  on('ui.open', (_$, e) => { panes.push(e.id); return { value: { isPlaced: true as const } } })
+  // What the pane atom is set to (its lines), seen on the way to the kit's own state.
+  on('state.set', (_$, e, next) => { states.push({ key: e.key, value: e.value }); return next(e) })
+  on('ui.open', (_$, e) => { panes.push(e.id); titles.push(e.title); return { value: { isPlaced: true as const } } })
   on('process.run', (_$, e) => { runs.push([...e.argv]); if (opts.gitThrows) throw new Error('git exploded'); return { value: { exitCode: 0, stdout: 'fix login\n', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } } })
   const fetches: { method: string; url: string; body: string | undefined; headers: Record<string, string> }[] = []
   const copies: string[] = []
@@ -79,7 +117,7 @@ export function world(on: On, opts: { files?: Record<string, string>; cwd?: stri
     return { value: { status: r.status, ok: r.status >= 200 && r.status < 300, headers: {}, text } }
   })
   on('ui.copy', (_$, e) => { if (opts.copyThrows) throw new Error('no clipboard'); if (opts.copyRefused) return { value: { isCopied: false as const, reason: 'no-clipboard' as const } }; copies.push(e.text); return { value: { isCopied: true as const } } })
-  return { files, writes, fetches, copies, statuses, toasts, panes, runs, clock, read: (p: string) => files.get(norm(p)) }
+  return { files, writes, fetches, copies, statuses, toasts, panes, titles, states, runs, spawns, reads, clock, paneLines: () => (states.filter(s => s.key === 'pane').at(-1)?.value as { lines?: string[] } | undefined)?.lines, read: (p: string) => files.get(norm(p)) }
 }
 
 export const SESSION = { cwd: '/work/acme/api', surface: 'terminal', isInteractive: true } as const

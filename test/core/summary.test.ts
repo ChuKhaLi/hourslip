@@ -5,7 +5,7 @@ import type { Row, Rules, Timesheet } from '../../plugin/hooks/core/types.ts'
 
 const rules: Rules = { ...DEFAULT_RULES, clients: [{ id: 'acme', name: 'ACME', paths: [], rate: null, ticketPattern: null }] }
 const row = (date: string, client: string | null, presence: number, extra: Partial<Row> = {}): Row =>
-  ({ date, client, ticket: null, presenceMinutes: presence, claudeMinutes: 0, manualMinutes: 0, overlap: false, capped: false, ...extra })
+  ({ date, client, ticket: null, presenceMinutes: presence, claudeMinutes: 0, manualMinutes: 0, overlap: false, capped: false, imported: false, ...extra })
 const ts = (rows: Row[]): Timesheet => ({ rows, ticketSources: [], overlapDates: [...new Set(rows.filter(r => r.overlap).map(r => r.date))], cappedDates: [] })
 
 describe('statusText', () => {
@@ -34,6 +34,18 @@ describe('weekLines', () => {
       'Week of 2026-10-05',
       'No time recorded this week.',
       '⚠ rules.json is not valid JSON (line 4). Everything is Unassigned until it is fixed.',
+    ])
+  })
+  test('an imported day ends with · imported and the footer shows once', () => {
+    const t = ts([row('2026-10-05', 'acme', 60, { imported: true }), row('2026-10-06', 'acme', 30), row('2026-10-07', 'acme', 30, { imported: true })])
+    const lines = weekLines(t, rules, '2026-10-05', { skipped: 0, manualSkipped: 0, rulesError: null })
+    expect(lines).toEqual([
+      'Week of 2026-10-05',
+      'Mon 10-05  ACME 1h00 (Claude 0h00) · imported',
+      'Tue 10-06  ACME 0h30 (Claude 0h00)',
+      'Wed 10-07  ACME 0h30 (Claude 0h00) · imported',
+      'Total      ACME 2h00',
+      'imported: from Claude Code transcripts (/hourslip import --undo removes them)',
     ])
   })
 })

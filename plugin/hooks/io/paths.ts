@@ -1,4 +1,4 @@
-import type { FsEntry, ProcessRunInit, ProcessRunResult, SessionRepo } from 'claude-code'
+import type { FsEntry, ProcessRunInit, ProcessRunResult, ProcessSpawnChunk, ProcessSpawnRequest, ProcessSpawnResult, SessionRepo } from 'claude-code'
 
 /**
  * What the io layer needs of `$`, as plain functions in narrow ports. `claude plugin validate` refuses a
@@ -52,7 +52,19 @@ export type CommandEngine = RecorderEngine & {
 /** `/hourslip` with the paid tier: CommandEngine plus the network and the store. */
 export type PublishEngine = CommandEngine & { http: HttpPort; store: StorePort }
 
-const trim = (p: string) => p.replace(/\\/g, '/').replace(/\/+$/, '')
+/** `$.process.spawn` as the import reads it: pieces of text, then how the child ended. */
+export type SpawnPort = (request: ProcessSpawnRequest) => AsyncIterator<ProcessSpawnChunk, ProcessSpawnResult>
+/**
+ * `/hourslip import`: CommandEngine plus the Claude Code config dir, `fs.stat` (to tell a file over 4 MiB),
+ * and `process.spawn`, which the desktop app may lack (then large transcripts are skipped and counted).
+ */
+export type ImportEngine = CommandEngine & {
+  env: EnvPort & { claudeConfigDir(): Promise<string | undefined> }
+  fs: CommandEngine['fs'] & { stat(path: string): Promise<{ size: number }> }
+  process: ProcessPort & { spawn?: SpawnPort }
+}
+
+export const trim = (p: string) => p.replace(/\\/g, '/').replace(/\/+$/, '')
 
 export async function homeDir($: HomeEngine): Promise<string> {
   const explicit = await $.env.hourslipHome()
@@ -60,4 +72,13 @@ export async function homeDir($: HomeEngine): Promise<string> {
   const base = (await $.env.home()) || (await $.env.userProfile())
   if (!base) throw new Error('hourslip: neither HOME nor USERPROFILE is set')
   return `${trim(base)}/.hourslip`
+}
+
+/** The Claude Code config dir: CLAUDE_CONFIG_DIR when set, else `<HOME or USERPROFILE>/.claude` (never HOURSLIP_HOME). */
+export async function claudeDir($: { env: Pick<EnvPort, 'home' | 'userProfile'> & { claudeConfigDir(): Promise<string | undefined> } }): Promise<string> {
+  const explicit = await $.env.claudeConfigDir()
+  if (explicit) return trim(explicit)
+  const base = (await $.env.home()) || (await $.env.userProfile())
+  if (!base) throw new Error('hourslip: neither HOME nor USERPROFILE is set')
+  return `${trim(base)}/.claude`
 }

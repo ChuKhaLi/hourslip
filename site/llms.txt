@@ -4,7 +4,7 @@
 
 ## What it records
 
-- When prompts and turns start and end, the working folder and the git branch. Never prompt text, never file contents. Data stays in ~/.hourslip until the user presses Publish.
+- When prompts and turns start and end, the working folder and the git branch. Never prompt text, never file contents. If you run /hourslip import, it reads Claude Code's transcripts on your machine to find earlier session times, and keeps only the times, folder and branch. Data stays in ~/.hourslip until the user presses Publish.
 - Hours are a lower bound: only time in Claude Code with the mod loaded, plus time the user adds by hand, which the report labels.
 
 ## Confirm

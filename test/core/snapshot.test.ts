@@ -13,9 +13,9 @@ const rules: Rules = {
 }
 const ts: Timesheet = {
   rows: [
-    { date: '2026-10-05', client: 'acme', ticket: 'A-1', presenceMinutes: 61, claudeMinutes: 20, manualMinutes: 0, overlap: false, capped: false },
-    { date: '2026-10-06', client: 'acme', ticket: null, presenceMinutes: 0, claudeMinutes: 0, manualMinutes: 30, overlap: true, capped: false },
-    { date: '2026-10-06', client: 'beta', ticket: null, presenceMinutes: 50, claudeMinutes: 0, manualMinutes: 0, overlap: true, capped: false },
+    { date: '2026-10-05', client: 'acme', ticket: 'A-1', presenceMinutes: 61, claudeMinutes: 20, manualMinutes: 0, overlap: false, capped: false, imported: false },
+    { date: '2026-10-06', client: 'acme', ticket: null, presenceMinutes: 0, claudeMinutes: 0, manualMinutes: 30, overlap: true, capped: false, imported: false },
+    { date: '2026-10-06', client: 'beta', ticket: null, presenceMinutes: 50, claudeMinutes: 0, manualMinutes: 0, overlap: true, capped: false, imported: false },
   ],
   ticketSources: [{ client: 'acme', ticket: 'A-1', branch: 'feat/A-1', cwd: '/w' }, { client: 'beta', ticket: 'A-1', branch: 'x', cwd: '/b' }],
   overlapDates: ['2026-10-06'], cappedDates: [],
@@ -51,16 +51,24 @@ describe('buildSnapshot', () => {
   })
   test('invoice rounding: 0.1 USD/h with 7 billable minutes rounds to 1 cent', () => {
     const lowRateRules = { ...rules, clients: [{ id: 'acme', name: 'ACME Corp', paths: [], rate: { amount: 0.1, currency: 'USD' }, ticketPattern: null }] }
-    const lowRateTs = { rows: [{ date: '2026-10-05', client: 'acme', ticket: null, presenceMinutes: 7, claudeMinutes: 0, manualMinutes: 0, overlap: false, capped: false }], ticketSources: [], overlapDates: [], cappedDates: [] }
+    const lowRateTs = { rows: [{ date: '2026-10-05', client: 'acme', ticket: null, presenceMinutes: 7, claudeMinutes: 0, manualMinutes: 0, overlap: false, capped: false, imported: false }], ticketSources: [], overlapDates: [], cappedDates: [] }
     const s = buildSnapshot({ timesheet: lowRateTs, manual: [], rules: lowRateRules, clientId: 'acme', from: '2026-10-01', to: '2026-10-31', commits: {}, showCommits: false, version: '0.1.0' })
     // 0.1 * 100 = 10 cents/h, 7 minutes = 10 * 7 / 60 = 1.166... -> 1
     expect(s.invoice?.amountCents).toBe(1)
   })
   test('invoice rounding: exact half-cent tie rounds up', () => {
     const halfRateRules = { ...rules, clients: [{ id: 'acme', name: 'ACME Corp', paths: [], rate: { amount: 0.03, currency: 'USD' }, ticketPattern: null }] }
-    const halfRateTs = { rows: [{ date: '2026-10-05', client: 'acme', ticket: null, presenceMinutes: 10, claudeMinutes: 0, manualMinutes: 0, overlap: false, capped: false }], ticketSources: [], overlapDates: [], cappedDates: [] }
+    const halfRateTs = { rows: [{ date: '2026-10-05', client: 'acme', ticket: null, presenceMinutes: 10, claudeMinutes: 0, manualMinutes: 0, overlap: false, capped: false, imported: false }], ticketSources: [], overlapDates: [], cappedDates: [] }
     const s = buildSnapshot({ timesheet: halfRateTs, manual: [], rules: halfRateRules, clientId: 'acme', from: '2026-10-01', to: '2026-10-31', commits: {}, showCommits: false, version: '0.1.0' })
     // 0.03 * 100 = 3 cents/h, 10 minutes = 3 * 10 / 60 = 0.5 -> 1
     expect(s.invoice?.amountCents).toBe(1)
+  })
+  test('an imported day carries imported: true; a recorded-only day has no imported key', () => {
+    const rows = ts.rows.map((r, n) => (n === 1 ? { ...r, imported: true } : r))
+    const s = buildSnapshot({ ...input, timesheet: { ...ts, rows }, clientId: 'acme' })
+    const [recorded, imported] = s.days
+    expect('imported' in recorded).toBe(false)
+    expect(imported.imported).toBe(true)
+    expect(Object.keys(buildSnapshot({ ...input, clientId: 'acme' }).days[0])).toEqual(['date', 'presenceMinutes', 'claudeMinutes', 'manualMinutes', 'overlap', 'capped'])
   })
 })

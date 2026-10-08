@@ -15,6 +15,7 @@ export type Command =
   | { kind: 'key-show' }
   | { kind: 'key-set'; key: string }
   | { kind: 'key-forget' }
+  | { kind: 'import'; mode: 'preview' | 'confirm' | 'undo' }
   | { kind: 'error'; message: string }
 
 export const USAGE = [
@@ -29,6 +30,7 @@ export const USAGE = [
   '  /hourslip subscribe [--monthly]            buy Pro (yearly unless --monthly)',
   '  /hourslip portal                           manage or cancel Pro',
   '  /hourslip key | key show | key set <key> | key forget',
+  '  /hourslip import [--confirm | --undo]      past sessions from Claude Code transcripts (preview first)',
   '  /hourslip tz                                the timezone offset hourslip records',
 ].join('\n')
 
@@ -51,7 +53,7 @@ export function parseDuration(s: string): number | null {
 const MONTH = /^\d{4}-\d{2}$/
 const ID = /^[a-z0-9][a-z0-9-]*$/
 
-const BOOLEAN = new Set(['--session', '--confirm', '--no-commits', '--monthly'])
+const BOOLEAN = new Set(['--session', '--confirm', '--no-commits', '--monthly', '--undo'])
 
 function flags(tokens: string[]): { rest: string[]; opts: Map<string, string[]> } {
   const rest: string[] = []
@@ -134,6 +136,13 @@ export function parseCommand(args: string): Command {
   if (verb === 'portal') {
     if (opts.size > 0 || rest.length > 0) return err('Usage: /hourslip portal (no options)')
     return { kind: 'portal' }
+  }
+  if (verb === 'import') {
+    const bad = [...opts.keys()].find(k => k !== 'confirm' && k !== 'undo')
+    if (bad !== undefined) return err(`Unknown option --${bad}. import takes --confirm and --undo.`)
+    if (opts.has('confirm') && opts.has('undo')) return err('Use --confirm or --undo, not both.')
+    if (rest.length > 0) return err('Usage: /hourslip import [--confirm | --undo]')
+    return { kind: 'import', mode: opts.has('confirm') ? 'confirm' : opts.has('undo') ? 'undo' : 'preview' }
   }
   if (verb === 'key') {
     const usage = 'Usage: /hourslip key | /hourslip key show | /hourslip key set <key> | /hourslip key forget'

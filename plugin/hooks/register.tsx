@@ -13,19 +13,19 @@ export const register: Register = on => {
   on('command.run', { command: 'hourslip' }, async ($, e) => {
     let reply: string
     try {
-      const { text, openPane } = await runCommand({
-        env: { hourslipHome: () => $.env.get('HOURSLIP_HOME'), home: () => $.env.get('HOME'), userProfile: () => $.env.get('USERPROFILE'), server: () => $.env.get('HOURSLIP_SERVER'), os: () => $.env.get('OS') },
+      const { text, openPane, pane: shown } = await runCommand({
+        env: { hourslipHome: () => $.env.get('HOURSLIP_HOME'), home: () => $.env.get('HOME'), userProfile: () => $.env.get('USERPROFILE'), server: () => $.env.get('HOURSLIP_SERVER'), os: () => $.env.get('OS'), claudeConfigDir: () => $.env.get('CLAUDE_CONFIG_DIR') },
         session: { id: () => $.session.id(), cwd: () => $.session.cwd(), repo: () => $.session.repo() },
-        fs: { read: p => $.fs.read(p), write: (p, t) => $.fs.write(p, t), exists: p => $.fs.exists(p), list: p => $.fs.list(p) },
+        fs: { read: p => $.fs.read(p), write: (p, t) => $.fs.write(p, t), exists: p => $.fs.exists(p), list: p => $.fs.list(p), stat: p => $.fs.stat(p) },
         clock: { now: () => $.clock.now() },
         ui: { status: t => $.ui.status(t), toast: t => $.ui.toast(t), copy: async t => (await $.ui.copy({ text: t })).isCopied === true },
-        process: { run: (argv, init) => $.process.run(argv, init) },
+        process: { run: (argv, init) => $.process.run(argv, init), spawn: req => $.process.spawn(req) },
         http: { fetch: (u, i) => $.http.fetch(u, i) },
         store: { get: k => $.store.get(k), set: (k, v) => $.store.set(k, v), delete: k => $.store.delete(k) },
       }, recorder, e.args)
       if (openPane) {
-        await update($, pane, () => ({ lines: text.split('\n') }))
-        await $.ui.open({ id: PANE, title: 'hourslip · this week' })
+        await update($, pane, () => ({ lines: shown?.lines ?? text.split('\n') }))
+        await $.ui.open({ id: PANE, title: shown?.title ?? 'hourslip · this week' })
       }
       reply = text
     } catch (err) {

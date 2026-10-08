@@ -96,3 +96,19 @@ describe('publishing verbs', () => {
     for (const s of ['publish <client>', 'subscribe', 'portal', 'unpublish <client> <YYYY-MM>', 'key set <key>', 'key show']) expect(USAGE).toContain(s)
   })
 })
+
+describe('import', () => {
+  test('preview, --confirm, --undo, flags anywhere after the verb', () => {
+    expect(parseCommand('import')).toEqual({ kind: 'import', mode: 'preview' })
+    expect(parseCommand('import --confirm')).toEqual({ kind: 'import', mode: 'confirm' })
+    expect(parseCommand('import --undo')).toEqual({ kind: 'import', mode: 'undo' })
+  })
+  test('--confirm with --undo, an unknown flag, or a word is an error', () => {
+    expect(parseCommand('import --confirm --undo')).toEqual({ kind: 'error', message: 'Use --confirm or --undo, not both.' })
+    expect(parseCommand('import --x')).toEqual({ kind: 'error', message: 'Unknown option --x. import takes --confirm and --undo.' })
+    expect(parseCommand('import acme')).toEqual({ kind: 'error', message: 'Usage: /hourslip import [--confirm | --undo]' })
+  })
+  test('USAGE names import', () => {
+    expect(USAGE).toContain('/hourslip import [--confirm | --undo]')
+  })
+})

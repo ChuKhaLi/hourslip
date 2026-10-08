@@ -5,6 +5,7 @@ import { HONESTY_LINE } from '../../plugin/hooks/core/report.ts'
 import { SITE } from '../../scripts/build-site.mjs'
 import { PAGES, read } from './pages.ts'
 
+const IMPORT_SENTENCE = "If you run <code>/hourslip import</code>, it reads Claude Code's transcripts on your machine to find earlier session times, and keeps only the times, folder and branch."
 const between = (html: string, a: string, b: string) => html.slice(html.indexOf(a), html.indexOf(b) + b.length)
 
 test('no page runs script or carries inline style', () => {
@@ -49,9 +50,15 @@ test('the landing carries the honesty line, the install commands, what is never 
   expect(html).toContain('claude plugin marketplace add ChuKhaLi/hourslip')
   expect(html).toContain('claude plugin install hourslip@hourslip')
   expect(html).toContain('Never your prompts, never file contents.')
+  expect(html).toContain(IMPORT_SENTENCE)
   expect(html).toContain('⏱ ACME · ACME-182 · 2h14 today')
   for (const s of ['39h10', '14h05', '12h11', '8h32']) expect(read('sample.html')).toContain(s)
   for (const s of ['39h10', '14h05', '12h11', '8h32']) expect(html).toContain(s)
+})
+test('llms.txt says what the import reads and keeps, and still that prompt text is never recorded', () => {
+  const llms = read('llms.txt')
+  expect(llms).toContain("If you run /hourslip import, it reads Claude Code's transcripts on your machine to find earlier session times, and keeps only the times, folder and branch.")
+  expect(llms).toContain('Never prompt text, never file contents.')
 })
 test('pricing: $72 a year preselected wording, $8 monthly, local currency note', () => {
   const html = read('index.html')
@@ -73,14 +80,14 @@ test('"Unlimited" is fair use with the server\'s caps written out, and the price
   }
 })
 test('legal pages carry the date and the facts the spec fixes', () => {
-  const updated: Record<string, string> = { 'terms.html': '6 October 2026', 'privacy.html': '7 October 2026', 'refunds.html': '5 October 2026' }
+  const updated: Record<string, string> = { 'terms.html': '6 October 2026', 'privacy.html': '8 October 2026', 'refunds.html': '5 October 2026' }
   for (const [p, d] of Object.entries(updated)) expect(read(p), p).toContain(`Last updated: ${d}`)
   const terms = read('terms.html')
   for (const s of ['ChuKhaLi, an individual developer', 'Dodo Payments is the merchant of record', 'FSL-1.1-MIT', 'laws of Vietnam', 'stays online for 2 years']) expect(terms, s).toContain(s)
   const privacy = read('privacy.html')
   for (const s of ["Your IP address is used in memory by hourslip's server to limit free keys, and hourslip's server never stores it.",
     "hourslip.dev is served by Cloudflare, which processes visitors' IP addresses to deliver the site.",
-    'hosting provider in Singapore', 'kept for 30 days', 'transferred outside it', 'never records prompt text or file contents',
+    'hosting provider in Singapore', 'kept for 30 days', 'transferred outside it', 'never records prompt text or file contents', IMPORT_SENTENCE,
     '/hourslip unpublish', 'within 30 days', 'sets no cookies, runs no analytics', 'Report links (r.hourslip.dev) are served through Cloudflare',
     'with your email address and its subscription and payment ids in the page address']) expect(privacy, s).toContain(s)
   const refunds = read('refunds.html')

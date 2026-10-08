@@ -3,6 +3,9 @@ import type { Snapshot } from './snapshot.ts'
 
 export const HONESTY_LINE = 'Measured from Claude Code activity. Time outside Claude Code, such as meetings or manual testing, appears only where it was added by hand, and is labelled so.'
 
+/** By day notes for a day with time read from Claude Code transcripts (`/hourslip import`). */
+export const IMPORTED_NOTE = 'from Claude Code transcripts'
+
 /** Stands next to every Confirm (parent spec §6.3, §10). */
 export const CONFIRM_NOTE = 'hourslip does not verify who confirms: anyone with this link can.'
 
@@ -52,7 +55,7 @@ export function renderReport(s: Snapshot, opts: { banner?: string | string[]; co
   const newer = opts.newer ? `<div class="banner">A newer version of this report exists. <a href="${e(opts.newer)}">Open the newest version</a>.</div>` : ''
   const banner = newer + (lines.length ? `<div class="banner">${lines.map(l => `<div>${e(l)}</div>`).join('')}</div>` : '')
   const billable = t.presenceMinutes + t.manualMinutes
-  const days = s.days.map(d => `<tr><td>${e(d.date)}</td><td class="n">${formatMinutes(d.presenceMinutes)}</td><td class="n">${formatMinutes(d.manualMinutes)}</td><td class="n">${formatMinutes(d.claudeMinutes)}</td><td>${d.overlap ? '<span class="warn">overlapping clients</span>' : ''}${d.capped ? ' <span class="warn">capped at 12h</span>' : ''}</td></tr>`).join('')
+  const days = s.days.map(d => `<tr><td>${e(d.date)}</td><td class="n">${formatMinutes(d.presenceMinutes)}</td><td class="n">${formatMinutes(d.manualMinutes)}</td><td class="n">${formatMinutes(d.claudeMinutes)}</td><td>${d.overlap ? '<span class="warn">overlapping clients</span>' : ''}${d.capped ? ' <span class="warn">capped at 12h</span>' : ''}${d.imported ? `${d.overlap || d.capped ? ' ' : ''}<span class="muted">${IMPORTED_NOTE}</span>` : ''}</td></tr>`).join('')
   const tickets = s.tickets.map(k => `<tr><td>${k.ticket === null ? '<span class="muted">No ticket</span>' : e(k.ticket)}${k.branches.length ? `<div class="muted">${k.branches.map(e).join(', ')}</div>` : ''}${k.commits.length ? `<ul>${k.commits.map(c => `<li>${e(c)}</li>`).join('')}</ul>` : ''}</td><td class="n">${formatMinutes(k.presenceMinutes)}</td><td class="n">${formatMinutes(k.claudeMinutes)}</td></tr>`).join('')
   const manual = s.manual.length ? `<h2>Added by hand</h2><table><tr><th>Date</th><th>Note</th><th class="n">Time</th></tr>${s.manual.map(m => `<tr><td>${e(m.date)}</td><td>${e(m.note)} <span class="muted">(added by hand${m.ticket ? `, ${e(m.ticket)}` : ''})</span></td><td class="n">${formatMinutes(m.minutes)}</td></tr>`).join('')}</table>` : ''
   const inv = s.invoice

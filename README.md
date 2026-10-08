@@ -46,6 +46,7 @@ Usage:
   /hourslip subscribe [--monthly]            buy Pro (yearly unless --monthly)
   /hourslip portal                           manage or cancel Pro
   /hourslip key | key show | key set <key> | key forget
+  /hourslip import [--confirm | --undo]      past sessions from Claude Code transcripts (preview first)
   /hourslip tz                                the timezone offset hourslip records
 ```
 
@@ -53,6 +54,14 @@ Usage:
 publish it: you get a link to send, copied to your clipboard. The first two reports are free, no card (unpublishing one does not give it back); after that
 `subscribe` opens a checkout page for Pro. The pane lists your reports under Published; `unpublish` deletes one,
 and its link then answers 410.
+
+`/hourslip import` finds the sessions you had before installing hourslip, in Claude Code's transcripts
+(under `CLAUDE_CONFIG_DIR` when set, else `~/.claude`, in `projects/`). It keeps sessions in a client's
+folders and skips any session hourslip already recorded. It writes nothing and replies with what it found
+(`Found <n> sessions from <date> to <date>: <client> <hours>`) and how many sessions are in folders with
+no client. `/hourslip import --confirm` writes them to `~/.hourslip/imported/`; reports, the pane and the
+CSV label those days ("from Claude Code transcripts", "imported"). `/hourslip import --undo` removes the
+imported time.
 
 `export` writes `hourslip-<client or all>-<month>-days.csv` and `-tickets.csv` into `~/.hourslip/exports/`. With a
 client it also writes an HTML preview of the client report, with commit titles per ticket when
@@ -68,6 +77,7 @@ and "Total billable hours" (the two together).
 `~/.hourslip` (or the folder in `HOURSLIP_HOME`):
 
 - `events/<sessionid>.jsonl`: one file per session
+- `imported/<sessionid>.jsonl`: sessions imported from Claude Code transcripts with `/hourslip import --confirm`
 - `manual.jsonl`: time added by hand with `/hourslip add`
 - `rules.json`: your clients and settings
 - `exports/`: CSVs and previews
@@ -108,6 +118,8 @@ start/end, end, tag), `cwd`, the git branch (read from `.git/HEAD`), turn ids an
 the subagent id (`agent`) when a subagent's turn ended. Never prompt text
 or file contents. Nothing leaves your machine.
 
+If you run `/hourslip import`, it reads Claude Code's transcripts on your machine to find earlier session times, and keeps only the times, folder and branch.
+
 ## How time is counted
 
 - A gap of more than 45 minutes between events splits activity into stretches.
@@ -130,6 +142,11 @@ or file contents. Nothing leaves your machine.
   lower bound, not a tamper-proof record.
 - Commit titles appear only on the CLI (they are read with `git` through `process.run`). Elsewhere,
   such as the desktop app, the report says they are unavailable.
+- `/hourslip import` finds only what Claude Code still keeps. Claude Code's data usage documentation
+  says its clients "store session transcripts locally in plaintext under `~/.claude/projects/` for 30
+  days by default to enable session resumption. Adjust the period with `cleanupPeriodDays`."
+- Transcripts over 4 MiB are read through `process.spawn`, which may be missing, as in the desktop app.
+  There large transcripts are skipped and the import says how many.
 - Checked only on Windows. macOS and Linux have not been checked.
 - A session's event file is rewritten whole after each event. The engine's declaration for `$.fs`
   says: "A read or write over 4 MiB rejects" and, for read, "Rejects when missing, or over 4 MiB". A

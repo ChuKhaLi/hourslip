@@ -1,7 +1,7 @@
 import { sessionPieces, type Piece, type TurnSpan } from './presence.ts'
 import { DAY_CAP_MS, MINUTE, type EventLine, type ManualLine, type Row, type Rules, type TicketSource, type Timesheet } from './types.ts'
 
-type Acc = { date: string; client: string | null; ticket: string | null; presenceMs: number; claudeMs: number; manualMinutes: number; overlap: boolean; capped: boolean }
+type Acc = { date: string; client: string | null; ticket: string | null; presenceMs: number; claudeMs: number; manualMinutes: number; overlap: boolean; capped: boolean; imported: boolean }
 const keyOf = (date: string, client: string | null, ticket: string | null) => JSON.stringify([date, client, ticket])
 
 export function buildTimesheet(input: { sessions: EventLine[][]; manual: ManualLine[]; rules: Rules; from: string; to: string }): Timesheet {
@@ -11,8 +11,10 @@ export function buildTimesheet(input: { sessions: EventLine[][]; manual: ManualL
   const sourceKeys = new Set<string>()
   for (const lines of input.sessions) {
     const r = sessionPieces(lines, input.rules)
-    pieces.push(...r.pieces)
-    turns.push(...r.turns)
+    // An imported session's lines all carry src 'transcript'; its pieces and turns mark the cells they reach.
+    const imported = lines[0]?.src === 'transcript'
+    pieces.push(...r.pieces.map(p => (imported ? { ...p, imported } : p)))
+    turns.push(...r.turns.map(p => (imported ? { ...p, imported } : p)))
     for (const s of r.sources) {
       const k = JSON.stringify(s)
       if (!sourceKeys.has(k)) { sourceKeys.add(k); sources.push(s) }
@@ -23,7 +25,7 @@ export function buildTimesheet(input: { sessions: EventLine[][]; manual: ManualL
   const cell = (date: string, client: string | null, ticket: string | null): Acc => {
     const k = keyOf(date, client, ticket)
     let a = acc.get(k)
-    if (!a) { a = { date, client, ticket, presenceMs: 0, claudeMs: 0, manualMinutes: 0, overlap: false, capped: false }; acc.set(k, a) }
+    if (!a) { a = { date, client, ticket, presenceMs: 0, claudeMs: 0, manualMinutes: 0, overlap: false, capped: false, imported: false }; acc.set(k, a) }
     return a
   }
 
@@ -41,15 +43,25 @@ export function buildTimesheet(input: { sessions: EventLine[][]; manual: ManualL
     for (const [client, group] of byClient) {
       const share = client === null ? b - a : (b - a) / assigned
       const keys = new Map<string, Piece>()
-      for (const p of group) keys.set(keyOf(p.date, p.client, p.ticket), p)
-      for (const p of keys.values()) {
+      const importedKeys = new Set<string>()
+      for (const p of group) {
+        const k = keyOf(p.date, p.client, p.ticket)
+        keys.set(k, p)
+        if (p.imported) importedKeys.add(k)
+      }
+      for (const [k, p] of keys) {
         const c = cell(p.date, p.client, p.ticket)
         c.presenceMs += share / keys.size
+        if (importedKeys.has(k)) c.imported = true
         if (client !== null && assigned > 1) c.overlap = true
       }
     }
   }
-  for (const t of turns) cell(t.date, t.client, t.ticket).claudeMs += t.end - t.start
+  for (const t of turns) {
+    const c = cell(t.date, t.client, t.ticket)
+    c.claudeMs += t.end - t.start
+    if (t.imported && t.end > t.start) c.imported = true
+  }
   for (const m of input.manual) cell(m.date, m.client, m.ticket).manualMinutes += m.minutes
 
   // Day cap on presence, over assigned clients only (Unassigned is not competing and is never capped).
@@ -87,7 +99,7 @@ export function buildTimesheet(input: { sessions: EventLine[][]; manual: ManualL
   const rows: Row[] = [...acc.values()].filter(c => inRange(c.date)).map(c => ({
     date: c.date, client: c.client, ticket: c.ticket,
     presenceMinutes: presenceMin.get(c) ?? 0, claudeMinutes: Math.round(c.claudeMs / MINUTE),
-    manualMinutes: c.manualMinutes, overlap: c.overlap, capped: c.capped,
+    manualMinutes: c.manualMinutes, overlap: c.overlap, capped: c.capped, imported: c.imported,
   })).filter(r => r.presenceMinutes + r.claudeMinutes + r.manualMinutes > 0)
   const cmp = (x: string | null, y: string | null) => (x === y ? 0 : x === null ? 1 : y === null ? -1 : x < y ? -1 : 1)
   rows.sort((x, y) => (x.date < y.date ? -1 : x.date > y.date ? 1 : cmp(x.client, y.client) || cmp(x.ticket, y.ticket)))

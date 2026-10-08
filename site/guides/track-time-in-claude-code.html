@@ -119,11 +119,24 @@ Usage by model:
     </figure>
     <p class="updated">Captured in Claude Code 2.1.293 on Windows, 2026-10-08, with a sample client (hourslip 0.2.2). The status line read 0h40 as soon as the 30 minutes were added, before the next prompt.</p>
     <p>Every hourslip report carries the same line: “Measured from Claude Code activity. Time outside Claude Code, such as meetings or manual testing, appears only where it was added by hand, and is labelled so.”</p>
+    <p>If you run <code>/hourslip import</code>, it reads Claude Code's transcripts on your machine to find earlier session times, and keeps only the times, folder and branch. It shows what it found and writes nothing until you add <code>--confirm</code>:</p>
+    <figure class="term" role="img" aria-label="Two hourslip commands: the import preview finds three sessions for ACME Corp, 4h15 from 2026-09-15 to 2026-09-29, and writes nothing; the confirmed import writes them and says reports label those days.">
+      <div class="term-bar">claude -p · sample transcripts</div>
+      <pre class="term-body"><span class="term-dim">$ claude -p "/hourslip import"</span>
+hourslip: Found 3 sessions from 2026-09-15 to 2026-09-29: ACME Corp 4h15. 2 sessions in folders with no client (add one with /hourslip client add, then import again).
+Nothing written yet. Import: /hourslip import --confirm
+Claude Code keeps transcripts 30 days by default (cleanupPeriodDays).
+
+<span class="term-dim">$ claude -p "/hourslip import --confirm"</span>
+hourslip: Imported 3 sessions (4h15). Reports mark these days "from Claude Code transcripts".</pre>
+    </figure>
+    <p class="updated">Captured in Claude Code 2.1.293 on Windows, 2026-10-08, with transcripts written for this run (hourslip 0.3.0).</p>
     <h2 id="limits">What hourslip does not do</h2>
     <ul>
       <li>Time away from Claude Code is not seen unless added by hand with <code>/hourslip add</code>: meetings, calls, testing in a browser, thinking away from the keyboard.</li>
       <li>Hours exist only for time spent in Claude Code with the mod loaded. A session where an organization policy disables mods records nothing.</li>
       <li>A stretch ends 10 minutes after its last event. Reading or testing for longer than that without a prompt counts only up to that pad.</li>
+      <li><code>/hourslip import</code> finds only the transcripts Claude Code still keeps (30 days by default, as the data usage page above says). Transcripts over 4 MiB need a reader process, which hourslip may not be able to start in the desktop app; there it skips them and says how many.</li>
       <li>Timestamps come from your own clock and are trusted: the hours are a lower bound, not a tamper-proof record.</li>
       <li>hourslip has been checked only on Windows; macOS and Linux have not been checked.</li>
     </ul>

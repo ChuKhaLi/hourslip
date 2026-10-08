@@ -50,18 +50,55 @@ export async function writeRules($: WriteEngine, home: string, rules: Rules): Pr
   await $.fs.write(`${home}/rules.json`, JSON.stringify(rules, null, 2) + '\n')
 }
 
+async function listOrNone($: SessionsEngine, dir: string): Promise<{ name: string; kind: string; size: number; mtimeMs: number }[]> {
+  try { return await $.fs.list(dir) } catch { return [] }
+}
+
+/** `imported/index.json`: each imported session's last event time, written by `import --confirm`. */
+export const IMPORTED_INDEX = 'index.json'
+
+/** The imported sessions' last event times, or null when the index is missing or unreadable. */
+export async function readImportedIndex($: ReadEngine, home: string): Promise<Map<string, number> | null> {
+  const text = await readText($, `${home}/imported/${IMPORTED_INDEX}`)
+  if (text === null) return null
+  try {
+    const o = JSON.parse(text)
+    if (!o || typeof o !== 'object' || Array.isArray(o)) return null
+    const out = new Map<string, number>()
+    for (const [sid, ms] of Object.entries(o)) if (typeof ms === 'number' && Number.isFinite(ms)) out.set(sid, ms)
+    return out
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Recorded sessions (`events/`) and imported ones (`imported/`). An imported session that also has
+ * `events/<sid>.jsonl` is read from `events/` only; an empty imported file (what `import --undo` leaves) is none.
+ * A recorded file older than `sinceMs` (its mtime) is left out. An imported file's mtime is the import's time,
+ * so the index's last event time says instead; a file the index does not name is read, and every one when
+ * the index is missing or unreadable.
+ */
 export async function readSessions($: SessionsEngine, home: string, sinceMs: number): Promise<{ sessions: EventLine[][]; skipped: number }> {
-  let entries: { name: string; kind: string; mtimeMs: number }[] = []
-  try { entries = await $.fs.list(`${home}/events`) } catch { return { sessions: [], skipped: 0 } }
+  const recorded = (await listOrNone($, `${home}/events`)).filter(e => e.kind === 'file' && e.name.endsWith('.jsonl'))
+  const recordedNames = new Set(recorded.map(e => e.name))
+  const imported = (await listOrNone($, `${home}/imported`)).filter(e => e.kind === 'file' && e.name.endsWith('.jsonl') && !recordedNames.has(e.name) && e.size !== 0)
+  const index = imported.length > 0 ? await readImportedIndex($, home) : null
   const sessions: EventLine[][] = []
   let skipped = 0
-  for (const entry of entries) {
-    if (entry.kind !== 'file' || !entry.name.endsWith('.jsonl') || entry.mtimeMs < sinceMs) continue
-    const text = await readText($, `${home}/events/${entry.name}`)
-    if (text === null) continue
-    const parsed = parseEventLines(text)
-    sessions.push(parsed.lines)
-    skipped += parsed.skipped
+  for (const [dir, entries, isImported] of [['events', recorded, false], ['imported', imported, true]] as const) {
+    for (const entry of entries) {
+      if (isImported) {
+        const last = index?.get(entry.name.slice(0, -'.jsonl'.length))
+        if (last !== undefined && last < sinceMs) continue
+      } else if (entry.mtimeMs < sinceMs) continue
+      const text = await readText($, `${home}/${dir}/${entry.name}`)
+      if (text === null) continue
+      const parsed = parseEventLines(text)
+      if (isImported && parsed.lines.length === 0 && parsed.skipped === 0) continue
+      sessions.push(parsed.lines)
+      skipped += parsed.skipped
+    }
   }
   return { sessions, skipped }
 }

@@ -2,7 +2,7 @@ import { localDate } from './dates.ts'
 import { attribute } from './rules.ts'
 import { GAP_MS, MIN_MS, PAD_MS, type Attribution, type EventLine, type Rules, type Tag, type TicketSource } from './types.ts'
 
-export type Piece = { start: number; end: number; date: string; client: string | null; ticket: string | null }
+export type Piece = { start: number; end: number; date: string; client: string | null; ticket: string | null; imported?: boolean }
 export type TurnSpan = Piece
 
 type Point = { t: number; tz: number; attr: Attribution; line: EventLine }

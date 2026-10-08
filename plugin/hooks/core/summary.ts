@@ -3,6 +3,7 @@ import { clientName } from './rules.ts'
 import type { Attribution, Row, Rules, Timesheet } from './types.ts'
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+export const IMPORTED_FOOTER = 'imported: from Claude Code transcripts (/hourslip import --undo removes them)'
 const billable = (r: Row) => r.presenceMinutes + r.manualMinutes
 
 export function statusText(ts: Timesheet, rules: Rules, attr: Attribution, today: string): string {
@@ -34,11 +35,12 @@ export function weekLines(ts: Timesheet, rules: Rules, monday: string, notes: { 
       const day = week.filter(r => r.date === date)
       if (day.length === 0) continue
       const cells = [...byClient(day)].map(([c, v]) => c === null ? `Unassigned ${formatMinutes(v.billable)}` : `${clientName(rules, c)} ${formatMinutes(v.billable)} (Claude ${formatMinutes(v.claude)})`)
-      out.push(`${DAYS[weekdayIndex(date)]} ${date.slice(5)}  ${cells.join(' · ')}`)
+      out.push(`${DAYS[weekdayIndex(date)]} ${date.slice(5)}  ${cells.join(' · ')}${day.some(r => r.imported) ? ' · imported' : ''}`)
     }
     out.push(`Total      ${[...byClient(week)].map(([c, v]) => `${clientName(rules, c)} ${formatMinutes(v.billable)}`).join(' · ')}`)
     const overlaps = [...new Set(week.filter(r => r.overlap).map(r => r.date.slice(5)))]
     if (overlaps.length) out.push(`⚠ Overlapping clients on ${overlaps.join(', ')}: check before you bill.`)
+    if (week.some(r => r.imported)) out.push(IMPORTED_FOOTER)
   }
   if (notes.skipped > 0) out.push(`⚠ ${notes.skipped} unreadable event lines were skipped.`)
   if (notes.manualSkipped > 0) out.push(`⚠ ${notes.manualSkipped} unreadable manual lines were skipped.`)

@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest'
 import { CONFIRM_NOTE, HONESTY_LINE, escapeHtml, renderReport } from '../../plugin/hooks/core/report.ts'
 import { contrast, styleOf, themes } from '../helpers/css.ts'
 import type { Snapshot } from '../../plugin/hooks/core/snapshot.ts'
+import { SAMPLE_SNAPSHOT } from '../../scripts/site/sample-snapshot.ts'
 
 const evil = '<script>alert(1)</script>"\'&'
 const snap: Snapshot = {
@@ -109,5 +110,17 @@ describe('report', () => {
   })
   test('without confirm there is no confirm section', () => {
     expect(renderReport(snap)).not.toContain('class="confirm"')
+  })
+  test('an imported day says from Claude Code transcripts in its notes cell', () => {
+    const day = { date: '2026-10-06', presenceMinutes: 30, claudeMinutes: 0, manualMinutes: 0, overlap: false, capped: false }
+    const html = renderReport({ ...snap, days: [...snap.days, { ...day, imported: true }] })
+    const rows = html.split('<tr>')
+    expect(rows.find(r => r.startsWith('<td>2026-10-06</td>'))).toMatch(/<td>[^<]*<span class="muted">from Claude Code transcripts<\/span><\/td><\/tr>/)
+    expect(rows.filter(r => r.includes('from Claude Code transcripts'))).toHaveLength(1)
+    expect(renderReport({ ...snap, days: [{ ...snap.days[0], imported: true }] })).toContain('<span class="warn">overlapping clients</span> <span class="muted">from Claude Code transcripts</span>')
+  })
+  test('the site sample has no imported days', () => {
+    expect(SAMPLE_SNAPSHOT.days.some(d => 'imported' in d)).toBe(false)
+    expect(renderReport(SAMPLE_SNAPSHOT)).not.toContain('from Claude Code transcripts')
   })
 })

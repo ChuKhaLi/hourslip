@@ -8,7 +8,7 @@ export type Snapshot = {
   client: { name: string }
   period: { from: string; to: string }
   totals: { presenceMinutes: number; claudeMinutes: number; manualMinutes: number }
-  days: { date: string; presenceMinutes: number; claudeMinutes: number; manualMinutes: number; overlap: boolean; capped: boolean }[]
+  days: { date: string; presenceMinutes: number; claudeMinutes: number; manualMinutes: number; overlap: boolean; capped: boolean; imported?: true }[]
   tickets: { ticket: string | null; presenceMinutes: number; claudeMinutes: number; branches: string[]; commits: string[] }[]
   manual: { date: string; minutes: number; note: string; ticket: string | null }[]
   invoice: { number: string; currency: string; rateCents: number; billableMinutes: number; amountCents: number; dueDate: string } | null
@@ -24,7 +24,7 @@ export function buildSnapshot(i: { timesheet: Timesheet; manual: ManualLine[]; r
   const dates = [...new Set(rows.map(r => r.date))].sort()
   const days = dates.map(date => {
     const d = rows.filter(r => r.date === date)
-    return { date, presenceMinutes: sum(d, r => r.presenceMinutes), claudeMinutes: sum(d, r => r.claudeMinutes), manualMinutes: sum(d, r => r.manualMinutes), overlap: d.some(r => r.overlap), capped: d.some(r => r.capped) }
+    return { date, presenceMinutes: sum(d, r => r.presenceMinutes), claudeMinutes: sum(d, r => r.claudeMinutes), manualMinutes: sum(d, r => r.manualMinutes), overlap: d.some(r => r.overlap), capped: d.some(r => r.capped), ...(d.some(r => r.imported) ? { imported: true as const } : {}) }
   })
   const ticketKeys = [...new Set(rows.map(r => r.ticket))].sort((a, b) => (a === b ? 0 : a === null ? 1 : b === null ? -1 : a < b ? -1 : 1))
   const tickets = ticketKeys.map(ticket => {
