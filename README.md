@@ -60,8 +60,11 @@ and its link then answers 410.
 folders and skips any session hourslip already recorded. It writes nothing and replies with what it found
 (`Found <n> sessions from <date> to <date>: <client> <hours>`) and how many sessions are in folders with
 no client. `/hourslip import --confirm` writes them to `~/.hourslip/imported/`; reports, the pane and the
-CSV label those days ("from Claude Code transcripts", "imported"). `/hourslip import --undo` removes the
-imported time.
+CSV label those days ("from Claude Code transcripts", "imported"). On a large history `--confirm` may need
+several runs, since Claude Code gives a command only a few seconds: it says how many transcripts are left.
+`--confirm` also keeps a scan cache in `~/.hourslip/import-cache/` so the next import is quick: the times,
+session ids, folders and branches of every Claude Code session on this machine, never prompt text.
+`/hourslip import --undo` removes the imported time and the cache.
 
 `export` writes `hourslip-<client or all>-<month>-days.csv` and `-tickets.csv` into `~/.hourslip/exports/`. With a
 client it also writes an HTML preview of the client report, with commit titles per ticket when
@@ -78,6 +81,8 @@ and "Total billable hours" (the two together).
 
 - `events/<sessionid>.jsonl`: one file per session
 - `imported/<sessionid>.jsonl`: sessions imported from Claude Code transcripts with `/hourslip import --confirm`
+- `import-cache/`: what `/hourslip import --confirm` read of each transcript (times, session ids, folders and
+  branches of every Claude Code session on this machine, never prompt text); `--undo` empties it
 - `manual.jsonl`: time added by hand with `/hourslip add`
 - `rules.json`: your clients and settings
 - `exports/`: CSVs and previews
@@ -118,7 +123,7 @@ start/end, end, tag), `cwd`, the git branch (read from `.git/HEAD`), turn ids an
 the subagent id (`agent`) when a subagent's turn ended. Never prompt text
 or file contents. Nothing leaves your machine.
 
-If you run `/hourslip import`, it reads Claude Code's transcripts on your machine to find earlier session times, and keeps only the times, folder and branch.
+If you run `/hourslip import`, it reads Claude Code's transcripts on your machine to find earlier session times, and keeps only the times, session ids, folder and branch, never prompt text. With `--confirm` it keeps them for every Claude Code session on this machine in `~/.hourslip/import-cache/`, so the next import is quick; `--undo` removes that too.
 
 ## How time is counted
 

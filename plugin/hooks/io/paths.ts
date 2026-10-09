@@ -62,6 +62,11 @@ export type ImportEngine = CommandEngine & {
   env: EnvPort & { claudeConfigDir(): Promise<string | undefined> }
   fs: CommandEngine['fs'] & { stat(path: string): Promise<{ size: number }> }
   process: ProcessPort & { spawn?: SpawnPort }
+  /**
+   * What is left of the hook's own time, in ms (`next.budget.remainingMs`: it stands still while a `$` call is in
+   * flight). None: unlimited (the kit, which meters nothing).
+   */
+  budget?: () => number
 }
 
 export const trim = (p: string) => p.replace(/\\/g, '/').replace(/\/+$/, '')

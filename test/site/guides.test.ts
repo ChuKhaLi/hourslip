@@ -114,7 +114,7 @@ test('track-time-in-claude-code: the claims that would change if facts changed',
   expect(html).toContain('Captured in Claude Code 2.1.293 on Windows, 2026-10-08, with a sample client (hourslip 0.2.2). The status line read 0h40 as soon as the 30 minutes were added, before the next prompt.')
   expect(html).not.toContain('still read 0h10')
   // /hourslip import (plugin/hooks/io/importing.ts:66-85; spike 2026-10-08-transcript-import, run 1)
-  expect(html).toContain("If you run <code>/hourslip import</code>, it reads Claude Code's transcripts on your machine to find earlier session times, and keeps only the times, folder and branch.")
+  expect(html).toContain("If you run <code>/hourslip import</code>, it reads Claude Code's transcripts on your machine to find earlier session times, and keeps only the times, session ids, folder and branch, never prompt text. With <code>--confirm</code> it keeps them for every Claude Code session on this machine in <code>~/.hourslip/import-cache/</code>, so the next import is quick; <code>--undo</code> removes that too.")
   expect(html).toContain('hourslip: Found 3 sessions from 2026-09-15 to 2026-09-29: ACME Corp 4h15.')
   expect(html).toContain('Nothing written yet. Import: /hourslip import --confirm')
   expect(html).toContain('hourslip: Imported 3 sessions (4h15). Reports mark these days "from Claude Code transcripts".')

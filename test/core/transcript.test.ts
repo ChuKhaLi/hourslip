@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { DEFAULT_RULES } from '../../plugin/hooks/core/rules.ts'
 import { buildTimesheet } from '../../plugin/hooks/core/timesheet.ts'
-import { lineSplitter, slimTranscriptLine, transcriptEvents } from '../../plugin/hooks/core/transcript.ts'
+import { emptyMeta, eventsFromRecords, lineSplitter, transcriptEvents, transcriptRecordInto } from '../../plugin/hooks/core/transcript.ts'
 import type { Rules } from '../../plugin/hooks/core/types.ts'
 
 const SID = '11111111-2222-3333-4444-555555555555'
@@ -146,7 +146,7 @@ describe('lineSplitter', () => {
   })
 })
 
-describe('slimTranscriptLine', () => {
+describe('transcript records of every kind of line', () => {
   const lines = [
     user('2026-09-10T09:00:00.000Z', 'SECRET-PROMPT', { uuid: 'u1' }),
     asst('2026-09-10T09:00:05.000Z'),
@@ -159,10 +159,66 @@ describe('slimTranscriptLine', () => {
     asst('2026-09-10T09:30:04.000Z'),
     '{not json SECRET', '', '   ', '3', 'null', '[1]', L({ type: 'user' }), L({ type: 'user', timestamp: 'x', sessionId: SID, message: 'SECRET' }),
   ]
-  test('gives transcriptEvents the same result as the full line', () => {
-    expect(transcriptEvents(lines.map(slimTranscriptLine), 420)).toEqual(transcriptEvents(lines, 420))
+  const records = (ls: string[], meta?: ReturnType<typeof emptyMeta>) => ls.flatMap(l => { const r = transcriptRecordInto(l, meta); return r ? [r] : [] })
+  test('give transcriptEvents\'s events, and keep no prompt or reply text', () => {
+    expect(eventsFromRecords(records(lines), 420)).toEqual(transcriptEvents(lines, 420).events)
+    expect(JSON.stringify(records(lines))).not.toMatch(/SECRET/)
   })
-  test('keeps no prompt or reply text', () => {
-    expect(lines.map(slimTranscriptLine).join('\n')).not.toMatch(/SECRET/)
+  test('meta gathers the ids and the span of every timestamped line, records or not', () => {
+    const meta = emptyMeta()
+    records([...lines, L({ type: 'system', timestamp: '2026-09-10T10:00:00.000Z', sessionId: 'other' })], meta)
+    expect([...meta.sids].sort()).toEqual([SID, 'other'].sort())
+    expect(meta.from).toBe(Date.parse('2026-09-10T09:00:00.000Z'))
+    expect(meta.to).toBe(Date.parse('2026-09-10T10:00:00.000Z'))
+  })
+})
+
+describe('transcript records (parsed once, reused)', () => {
+  const lines = [
+    user('2026-09-10T09:00:00.000Z', 'SECRET-PROMPT', { uuid: 'u1' }),
+    asst('2026-09-10T09:00:05.000Z'),
+    user('2026-09-10T09:00:06.000Z', '<local-command-stdout>SECRET</local-command-stdout>'),
+    user('2026-09-10T09:01:00.000Z', 'x', { isMeta: true }),
+    user('2026-09-10T09:02:00.000Z', 'x', { isSidechain: true }),
+    user('2026-09-10T09:03:00.000Z', [{ type: 'tool_result', content: 'SECRET' }]),
+    L({ type: 'system', timestamp: '2026-09-10T11:00:00.000Z', sessionId: 'sys-only' }),
+    user('2026-09-10T09:30:00.000Z', 'SECRET-2', { uuid: 'u2' }),
+    asst('2026-09-10T09:30:04.000Z'),
+    '{not json SECRET', '', 'null', L({ type: 'user' }),
+  ]
+  test('a line transcriptEvents ignores gives no record, after its sid and time reach meta', () => {
+    const meta = emptyMeta()
+    const recs = lines.map(l => transcriptRecordInto(l, meta))
+    expect(recs.map(r => r?.role ?? null)).toEqual(['prompt', 'assistant', null, null, null, null, null, 'prompt', 'assistant', null, null, null, null])
+    expect(meta.sids).toEqual(new Set([SID, 'sys-only']))
+    expect(meta.to).toBe(Date.parse('2026-09-10T11:00:00.000Z'))
+    expect(recs[0]).toEqual({ ts: '2026-09-10T09:00:00.000Z', sid: SID, cwd: 'F:/work/acme', branch: 'feat/ACME-1-x', role: 'prompt', uuid: 'u1' })
+    expect(JSON.stringify(recs)).not.toMatch(/SECRET/)
+  })
+  test('events from records equal events from lines, for any taken set, records reused', () => {
+    const recs = lines.flatMap(l => { const r = transcriptRecordInto(l); return r ? [r] : [] })
+    for (const taken of [new Set<string>(), new Set(['u1']), new Set(['u2']), new Set<string>()]) {
+      expect(eventsFromRecords(recs, 420, taken)).toEqual(transcriptEvents(lines, 420, taken).events)
+    }
+  })
+})
+
+describe('lineSplitter in linear time', () => {
+  test('a long line in 10,000 one-character pieces is reassembled, each character looked at a bounded number of times', () => {
+    const N = 10_000
+    const s = lineSplitter()
+    const out: string[] = []
+    const t0 = performance.now()
+    for (let i = 0; i < N; i++) out.push(...s.push('x'))
+    out.push(...s.push('\n'), ...s.end())
+    expect(out).toEqual(['x'.repeat(N)])
+    expect(s.scanned()).toBeLessThanOrEqual(2 * (N + 1))
+    expect(performance.now() - t0).toBeLessThan(2_000)
+  })
+  test('many lines in one piece, and a piece with several newlines after a pending part', () => {
+    const s = lineSplitter()
+    expect(s.push('ab')).toEqual([])
+    expect(s.push('c\nd\r\ne\n\nf')).toEqual(['abc', 'd', 'e', ''])
+    expect(s.end()).toEqual(['f'])
   })
 })

@@ -5,7 +5,7 @@ import { HONESTY_LINE } from '../../plugin/hooks/core/report.ts'
 import { SITE } from '../../scripts/build-site.mjs'
 import { PAGES, read } from './pages.ts'
 
-const IMPORT_SENTENCE = "If you run <code>/hourslip import</code>, it reads Claude Code's transcripts on your machine to find earlier session times, and keeps only the times, folder and branch."
+const IMPORT_SENTENCE = "If you run <code>/hourslip import</code>, it reads Claude Code's transcripts on your machine to find earlier session times, and keeps only the times, session ids, folder and branch, never prompt text. With <code>--confirm</code> it keeps them for every Claude Code session on this machine in <code>~/.hourslip/import-cache/</code>, so the next import is quick; <code>--undo</code> removes that too."
 const between = (html: string, a: string, b: string) => html.slice(html.indexOf(a), html.indexOf(b) + b.length)
 
 test('no page runs script or carries inline style', () => {
@@ -57,7 +57,7 @@ test('the landing carries the honesty line, the install commands, what is never 
 })
 test('llms.txt says what the import reads and keeps, and still that prompt text is never recorded', () => {
   const llms = read('llms.txt')
-  expect(llms).toContain("If you run /hourslip import, it reads Claude Code's transcripts on your machine to find earlier session times, and keeps only the times, folder and branch.")
+  expect(llms).toContain("If you run /hourslip import, it reads Claude Code's transcripts on your machine to find earlier session times, and keeps only the times, session ids, folder and branch, never prompt text. With --confirm it keeps them for every Claude Code session on this machine in ~/.hourslip/import-cache/, so the next import is quick; --undo removes that too.")
   expect(llms).toContain('Never prompt text, never file contents.')
 })
 test('pricing: $72 a year preselected wording, $8 monthly, local currency note', () => {

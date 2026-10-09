@@ -1,5 +1,6 @@
 import type { On } from 'claude-code'
 import { mock } from 'claude-code/testing'
+import type { HourslipEngine } from '../../hooks/io/commands.ts'
 
 /** Paths the engine hands hooks may carry a drive and backslashes; compare them without either. */
 export const norm = (p: string) => p.replace(/\\/g, '/').replace(/^[A-Za-z]:/, '')
@@ -29,7 +30,10 @@ export function world(on: On, opts: { files?: Record<string, string>; cwd?: stri
   const reads: string[] = []
   const titles: (string | undefined)[] = []
   const states: { key: string; value: unknown }[] = []
-  mock.env(on, { HOME: '/home/dev', ...opts.env })
+  /** A file's mtime as list and stat give it: T0 unless set here. */
+  const mtimes = new Map<string, number>()
+  const envVars: Record<string, string> = { HOME: '/home/dev', ...opts.env }
+  mock.env(on, envVars)
   if (opts.reportsStoreThrows || opts.storeSeed) {
     // mock.store can neither be overridden (on() twice is refused) nor pre-filled, so these options replace it: set fails for 'reports', or the store starts with storeSeed.
     const kv = new Map<string, unknown>(Object.entries(opts.storeSeed ?? {}))
@@ -42,21 +46,24 @@ export function world(on: On, opts: { files?: Record<string, string>; cwd?: stri
   on('session.id', () => ({ value: 'sess-1' }))
   on('session.cwd', () => ({ value: cwd }))
   on('session.repo', () => ({ value: opts.branchHead === null ? null : { root: cwd, remote: null, internal: false, name: null } }))
-  on('fs.read', ($, e) => {
-    reads.push(norm(e.path))
-    if (busy > 0 && e.path.endsWith('.jsonl')) { busy--; throw new Error('EBUSY') }
-    if (busyOnce?.test(norm(e.path))) { busyOnce = undefined; throw new Error('EBUSY') }
-    const text = files.get(norm(e.path))
-    if (text === undefined) throw new Error(`ENOENT: ${e.path}`)
+  // The disk as plain functions: the hooks below answer `$` with them, and engine() hands them to io code directly.
+  const fsRead = (path: string) => {
+    reads.push(norm(path))
+    if (busy > 0 && path.endsWith('.jsonl')) { busy--; throw new Error('EBUSY') }
+    if (busyOnce?.test(norm(path))) { busyOnce = undefined; throw new Error('EBUSY') }
+    const text = files.get(norm(path))
+    if (text === undefined) throw new Error(`ENOENT: ${path}`)
     // The engine refuses a read over 4 MiB; so does this disk.
-    if (bytes(text) > MAX_READ) throw new Error(`EFBIG: ${e.path} is over 4 MiB`)
-    return { value: text }
-  })
-  on('fs.stat', ($, e) => {
-    const text = files.get(norm(e.path))
-    if (text === undefined) throw new Error(`ENOENT: ${e.path}`)
-    return { value: { kind: 'file' as const, size: bytes(text), mtimeMs: T0, isLink: false } }
-  })
+    if (bytes(text) > MAX_READ) throw new Error(`EFBIG: ${path} is over 4 MiB`)
+    return text
+  }
+  const fsStat = (path: string) => {
+    const text = files.get(norm(path))
+    if (text === undefined) throw new Error(`ENOENT: ${path}`)
+    return { kind: 'file' as const, size: bytes(text), mtimeMs: mtimes.get(norm(path)) ?? T0, isLink: false }
+  }
+  on('fs.read', ($, e) => ({ value: fsRead(e.path) }))
+  on('fs.stat', ($, e) => ({ value: fsStat(e.path) }))
   // No spawn answer: the kit has no implementation, so `$.process.spawn` rejects its first pull (the desktop app's case).
   if (opts.spawn) {
     const answer = opts.spawn
@@ -69,29 +76,32 @@ export function world(on: On, opts: { files?: Record<string, string>; cwd?: stri
       return { value: { code, signal: null } } as never
     })
   }
-  on('fs.write', ($, e) => {
-    if (opts.failWrites || opts.failWritePattern?.test(e.path)) {
-      // A thrown hook is skipped by the kit; { deny } is how a refusal reaches the caller with its text.
-      if (opts.failWriteMessage) return { deny: opts.failWriteMessage }
+  /** A write as this disk takes it: false when refused with `failWriteMessage`; throws when it fails. */
+  const fsWrite = (path: string, text: string): boolean => {
+    if (opts.failWrites || opts.failWritePattern?.test(path)) {
+      if (opts.failWriteMessage) return false
       throw new Error('EACCES')
     }
     if (failOnce) { failOnce = false; throw new Error('EACCES') }
-    files.set(norm(e.path), e.text)
-    writes.push({ path: norm(e.path), text: e.text })
-    return { value: undefined }
-  })
-  on('fs.exists', ($, e) => ({ value: files.has(norm(e.path)) }))
-  on('fs.list', ($, e) => {
-    const dir = norm(e.path).replace(/\/$/, '') + '/'
+    files.set(norm(path), text)
+    writes.push({ path: norm(path), text })
+    return true
+  }
+  const fsList = (path: string) => {
+    const dir = norm(path).replace(/\/$/, '') + '/'
     const under = [...files.keys()].filter(k => k.startsWith(dir))
-    if (under.length === 0) throw new Error(`ENOENT: ${e.path}`)
+    if (under.length === 0) throw new Error(`ENOENT: ${path}`)
     const names = under.filter(k => !k.slice(dir.length).includes('/'))
     const dirs = [...new Set(under.filter(k => k.slice(dir.length).includes('/')).map(k => k.slice(dir.length).split('/')[0]))]
-    return { value: [
-      ...names.map(k => ({ name: k.slice(dir.length), kind: 'file' as const, size: bytes(files.get(k)!), mtimeMs: T0, isLink: false })),
+    return [
+      ...names.map(k => ({ name: k.slice(dir.length), kind: 'file' as const, size: bytes(files.get(k)!), mtimeMs: mtimes.get(k) ?? T0, isLink: false })),
       ...dirs.map(name => ({ name, kind: 'dir' as const, size: 0, mtimeMs: T0, isLink: false })),
-    ] }
-  })
+    ]
+  }
+  // A thrown hook is skipped by the kit; { deny } is how a refusal reaches the caller with its text.
+  on('fs.write', ($, e) => (fsWrite(e.path, e.text) ? { value: undefined } : { deny: opts.failWriteMessage! }))
+  on('fs.exists', ($, e) => ({ value: files.has(norm(e.path)) }))
+  on('fs.list', ($, e) => ({ value: fsList(e.path) }))
   on('ui.status', ($, e) => { statuses.push(e.text); return { value: undefined } })
   on('ui.toast', ($, e) => { toasts.push(e.text); return { value: undefined } })
   // The kit has nothing beneath plugin hooks: answer the events the recorder's callers raise.
@@ -117,7 +127,43 @@ export function world(on: On, opts: { files?: Record<string, string>; cwd?: stri
     return { value: { status: r.status, ok: r.status >= 200 && r.status < 300, headers: {}, text } }
   })
   on('ui.copy', (_$, e) => { if (opts.copyThrows) throw new Error('no clipboard'); if (opts.copyRefused) return { value: { isCopied: false as const, reason: 'no-clipboard' as const } }; copies.push(e.text); return { value: { isCopied: true as const } } })
-  return { files, writes, fetches, copies, statuses, toasts, panes, titles, states, runs, spawns, reads, clock, paneLines: () => (states.filter(s => s.key === 'pane').at(-1)?.value as { lines?: string[] } | undefined)?.lines, read: (p: string) => files.get(norm(p)) }
+  /**
+   * The engine `/hourslip` builds, over this disk, for driving io code directly with what `$.command.run` cannot
+   * give (the kit meters no hook time), such as a `budget` that runs out. Env, disk and spawn answer as the
+   * hooks above do; no network, git or clipboard.
+   */
+  const engine = (extra: { budget?: () => number } = {}): HourslipEngine => {
+    const env = async (name: string) => envVars[name]
+    const spawn = opts.spawn
+    return {
+      env: { hourslipHome: () => env('HOURSLIP_HOME'), home: () => env('HOME'), userProfile: () => env('USERPROFILE'), server: () => env('HOURSLIP_SERVER'), os: () => env('OS'), claudeConfigDir: () => env('CLAUDE_CONFIG_DIR') },
+      session: { id: async () => 'sess-1', cwd: async () => cwd, repo: async () => null },
+      fs: {
+        read: async (p: string) => fsRead(p),
+        write: async (p: string, t: string) => { if (!fsWrite(p, t)) throw new Error(opts.failWriteMessage) },
+        exists: async (p: string) => files.has(norm(p)),
+        list: async (p: string) => fsList(p),
+        stat: async (p: string) => fsStat(p),
+      },
+      clock: { now: async () => clock.now() },
+      ui: { status: (t: string | undefined) => { statuses.push(t) }, toast: (t: string) => { toasts.push(t) }, copy: async () => false },
+      process: {
+        run: async () => { throw new Error('no git here') },
+        ...(spawn ? { spawn: (req: { argv: readonly string[] }) => (async function* () {
+          spawns.push([...req.argv])
+          const text = files.get(norm(req.argv[req.argv.length - 1]))
+          if (text === undefined) return { code: 1, signal: null }
+          const { pieces, code = 0 } = spawn(text, [...req.argv])
+          for (const t of pieces) if (t !== '') yield { stream: 'stdout' as const, text: t }
+          return { code, signal: null }
+        })() } : {}),
+      },
+      http: { fetch: async () => { throw new Error('no network in this test') } },
+      store: { get: async () => undefined, set: async () => {}, delete: async () => {} },
+      ...extra,
+    } as unknown as HourslipEngine
+  }
+  return { engine, files, mtimes, writes, fetches, copies, statuses, toasts, panes, titles, states, runs, spawns, reads, clock, paneLines: () => (states.filter(s => s.key === 'pane').at(-1)?.value as { lines?: string[] } | undefined)?.lines, read: (p: string) => files.get(norm(p)) }
 }
 
 export const SESSION = { cwd: '/work/acme/api', surface: 'terminal', isInteractive: true } as const

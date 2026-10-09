@@ -29,7 +29,7 @@
     <h1>Privacy</h1>
     <p class="updated">Last updated: 8 October 2026</p>
     <h2>The mod, on your machine</h2>
-    <p>hourslip writes to <code>~/.hourslip</code> on your computer: when prompts and turns start and end, the working folder, and the git branch. It never records prompt text or file contents. If you run <code>/hourslip import</code>, it reads Claude Code's transcripts on your machine to find earlier session times, and keeps only the times, folder and branch. Nothing leaves your machine until you press Publish on a report.</p>
+    <p>hourslip writes to <code>~/.hourslip</code> on your computer: when prompts and turns start and end, the working folder, and the git branch. It never records prompt text or file contents. If you run <code>/hourslip import</code>, it reads Claude Code's transcripts on your machine to find earlier session times, and keeps only the times, session ids, folder and branch, never prompt text. With <code>--confirm</code> it keeps them for every Claude Code session on this machine in <code>~/.hourslip/import-cache/</code>, so the next import is quick; <code>--undo</code> removes that too. Nothing leaves your machine until you press Publish on a report.</p>
     <h2>What the server stores</h2>
     <p>When you publish a report, the server stores what the report shows:</p>
     <ul>

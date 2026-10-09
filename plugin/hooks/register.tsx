@@ -10,7 +10,7 @@ const pane = atom({ plugin: 'hourslip', key: 'pane' } as const, { lines: [] as s
 export const register: Register = on => {
   const recorder = createRecorder()
   installRecorder(on, recorder)
-  on('command.run', { command: 'hourslip' }, async ($, e) => {
+  on('command.run', { command: 'hourslip' }, async ($, e, next) => {
     let reply: string
     try {
       const { text, openPane, pane: shown } = await runCommand({
@@ -22,6 +22,8 @@ export const register: Register = on => {
         process: { run: (argv, init) => $.process.run(argv, init), spawn: req => $.process.spawn(req) },
         http: { fetch: (u, i) => $.http.fetch(u, i) },
         store: { get: k => $.store.get(k), set: (k, v) => $.store.set(k, v), delete: k => $.store.delete(k) },
+        // The hook's own time left (the clock stands still during each $ call): the import stops scanning before it runs out.
+        budget: () => next.budget.remainingMs,
       }, recorder, e.args)
       if (openPane) {
         await update($, pane, () => ({ lines: shown?.lines ?? text.split('\n') }))
