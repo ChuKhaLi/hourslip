@@ -121,7 +121,8 @@ and "Total billable hours" (the two together).
 Per event: a timestamp, the timezone offset, the session id, the kind of event (start, prompt, turn
 start/end, end, tag), `cwd`, the git branch (read from `.git/HEAD`), turn ids and, on a turn-end line,
 the subagent id (`agent`) when a subagent's turn ended. Never prompt text
-or file contents. Nothing leaves your machine.
+or file contents. Nothing leaves your machine until you publish a report or use a Pro command; every
+network call is listed in [plugin/README.md](plugin/README.md#network-and-data).
 
 If you run `/hourslip import`, it reads Claude Code's transcripts on your machine to find earlier session times, and keeps only the times, session ids, folder and branch, never prompt text. With `--confirm` it keeps them for every Claude Code session on this machine in `~/.hourslip/import-cache/`, so the next import is quick; `--undo` removes that too.
 

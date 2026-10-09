@@ -45,7 +45,7 @@ export function installRecorder(on: On, recorder: Recorder): void {
       ui: { status: t => $.ui.status(t) },
     }, recorder)
     return result
-  })
+  }).catch(($, e, next) => next(e)) // Recording never refuses a prompt: a failed hook lets it through (next replays when already called).
   on('turn.start', async ($, e, next) => {
     const result = await next(e)
     await recorder.record({

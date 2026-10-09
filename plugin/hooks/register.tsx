@@ -42,7 +42,12 @@ export const register: Register = on => {
       ui: { status: t => $.ui.status(t) },
     }, recorder)
     return { text: reply }
-  })
+  }).catch(($, e, next) => ({
+    // Without this a failed /hourslip prints nothing. The import stops itself before the budget; this is the backstop.
+    text: next.error.kind === 'timeout'
+      ? 'The command took longer than Claude Code allows a plugin and was stopped. Run it again.'
+      : errorText(next.error.message ?? 'The command failed.'),
+  }))
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const { Box, Text } = $.ui.resolve(e)
     const { lines } = await read($, pane)

@@ -1,1 +1,29 @@
-{ "name": "hourslip", "version": "0.3.1", "author": { "name": "ChuKhaLi" }, "description": "Billable hours from your Claude Code sessions, per client and ticket.", "types": "./types/index.d.ts" }
+{
+  "name": "hourslip",
+  "version": "0.3.2",
+  "description": "Billable hours from your Claude Code sessions, per client and ticket.",
+  "author": {
+    "name": "ChuKhaLi",
+    "email": "support@hourslip.dev",
+    "url": "https://hourslip.dev"
+  },
+  "homepage": "https://hourslip.dev",
+  "repository": "https://github.com/ChuKhaLi/hourslip",
+  "license": "FSL-1.1-MIT",
+  "keywords": [
+    "time-tracking",
+    "timesheet",
+    "billable-hours",
+    "freelance",
+    "invoice",
+    "client-report",
+    "hooks",
+    "status-line"
+  ],
+  "icon": "./icon.png",
+  "documentationUrl": "https://github.com/ChuKhaLi/hourslip/blob/main/plugin/README.md",
+  "supportUrl": "https://hourslip.dev/contact",
+  "privacyPolicyUrl": "https://hourslip.dev/privacy",
+  "termsOfServiceUrl": "https://hourslip.dev/terms",
+  "types": "./types/index.d.ts"
+}
