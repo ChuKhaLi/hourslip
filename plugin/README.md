@@ -44,6 +44,10 @@ kind of event, the working folder, the git branch read from `.git/HEAD`, turn id
 `~/.hourslip/events/<session id>.jsonl` and redraws the status line. A hook never blocks or changes a
 turn, and never records prompt text, replies or file contents.
 
+Every file hourslip writes is under `~/.hourslip` (or `HOURSLIP_HOME`): `events/`, `rules.json`,
+`manual.jsonl`, `exports/`, `previews/`, `imported/` and `import-cache/`. It never writes a build,
+start-up, settings or instructions file, and nothing it writes is run by another program.
+
 The `/hourslip` command runs other programs only by argv, never through a shell:
 
 - `git config user.name` and `git log --format=%s` in your client folders, for commit titles in exports
@@ -73,7 +77,11 @@ and only from these commands:
   published that are not yet confirmed (at most 20; it stops at the first failure).
 
 Each call carries your key as a Bearer token; it is stored by Claude Code for this plugin, never in a file
-under `~/.hourslip`. The server keeps a published report for 2 years, or until you unpublish it; it
+under `~/.hourslip`. The key is hourslip's own (`hs_` and 32 letters and digits): `r.hourslip.dev` issues
+it on your first publish, or you paste one with `/hourslip key set`, and it is sent to that server only.
+hourslip reads no other credential: no token, API key or credential file of yours. The environment
+variables it reads are `HOME`, `USERPROFILE`, `OS`, `CLAUDE_CONFIG_DIR`, `HOURSLIP_HOME` and
+`HOURSLIP_SERVER`. The server keeps a published report for 2 years, or until you unpublish it; it
 stores a hash of the key, never the key. Full policy: https://hourslip.dev/privacy
 
 `/hourslip import` reads Claude Code's transcripts on your machine (under `CLAUDE_CONFIG_DIR`, else

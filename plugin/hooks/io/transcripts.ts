@@ -11,15 +11,15 @@ type ReadEngine = Pick<ImportEngine, 'env' | 'process'> & { fs: Pick<ImportEngin
 export type TranscriptFile = { path: string; size: number; mtimeMs: number }
 
 /** Every `projects/<folder>/<file>.jsonl` under the Claude Code config dir with its listed size and mtime, sorted by path; none when the dir is missing. */
-export async function findTranscripts($: FindEngine): Promise<TranscriptFile[]> {
-  const root = `${await claudeDir($)}/projects`
+export async function findTranscripts(engine: FindEngine): Promise<TranscriptFile[]> {
+  const root = `${await claudeDir(engine)}/projects`
   let folders: { name: string; kind: string }[]
-  try { folders = await $.fs.list(root) } catch { return [] }
+  try { folders = await engine.fs.list(root) } catch { return [] }
   const out: TranscriptFile[] = []
   for (const folder of folders) {
     if (folder.kind !== 'dir') continue
     let entries: { name: string; kind: string; size: number; mtimeMs: number }[]
-    try { entries = await $.fs.list(`${root}/${folder.name}`) } catch { continue }
+    try { entries = await engine.fs.list(`${root}/${folder.name}`) } catch { continue }
     for (const e of entries) if (e.kind === 'file' && e.name.endsWith('.jsonl')) out.push({ path: `${root}/${folder.name}/${e.name}`, size: e.size, mtimeMs: e.mtimeMs })
   }
   return out.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0))
@@ -55,12 +55,12 @@ function readLines(lines: Iterable<string>, meta: TranscriptMeta, out: Transcrip
  * misread (Windows), or a reader that fails or stops early. A failure is never part of a file. `stop` is
  * asked now and then while it reads (the hook's time running out): then nothing of the file is kept.
  */
-export async function readTranscript($: ReadEngine, path: string, stop: () => boolean = () => false): Promise<TranscriptRead> {
+export async function readTranscript(engine: ReadEngine, path: string, stop: () => boolean = () => false): Promise<TranscriptRead> {
   let size: number | undefined
-  try { size = (await $.fs.stat(path)).size } catch { /* no stat here: try the read, and the reader if it refuses */ }
+  try { size = (await engine.fs.stat(path)).size } catch { /* no stat here: try the read, and the reader if it refuses */ }
   if (size === undefined || size <= MAX_READ) {
     let text: string | undefined
-    try { text = await $.fs.read(path) } catch { /* over 4 MiB after all, or unreadable: the reader below */ }
+    try { text = await engine.fs.read(path) } catch { /* over 4 MiB after all, or unreadable: the reader below */ }
     if (text !== undefined) {
       const meta = emptyMeta()
       const records: TranscriptRecord[] = []
@@ -68,7 +68,7 @@ export async function readTranscript($: ReadEngine, path: string, stop: () => bo
       return { ok: true, records, meta }
     }
   }
-  return spawnRead($, path, stop)
+  return spawnRead(engine, path, stop)
 }
 
 /** What cmd.exe reads as syntax even inside an argument (`%`, `!` expand; the rest split or redirect), and control characters. */
@@ -82,8 +82,8 @@ export function windowsReadable(path: string): boolean {
   return !CMD_UNSAFE.test(path) && parts.length >= 2 && PLAIN_NAME.test(parts[parts.length - 1]) && PLAIN_NAME.test(parts[parts.length - 2])
 }
 
-async function spawnRead($: ReadEngine, path: string, stop: () => boolean): Promise<TranscriptRead> {
-  const windows = (await $.env.os()) === 'Windows_NT'
+async function spawnRead(engine: ReadEngine, path: string, stop: () => boolean): Promise<TranscriptRead> {
+  const windows = (await engine.env.os()) === 'Windows_NT'
   const records: TranscriptRecord[] = []
   const meta = emptyMeta()
   // The ids of the lines read before a failure: such a session is never half-imported from another file.
@@ -95,9 +95,8 @@ async function spawnRead($: ReadEngine, path: string, stop: () => boolean): Prom
   let it: AsyncIterator<{ stream: string; text: string }, { code: number | null; signal: string | null }> | undefined
   let done = false
   try {
-    // Called, never read as a value: the directory's check reads `$.noun.method` only as a call.
-    it = $.process.spawn?.({ argv })
-    if (!it) return failed()
+    if (!engine.process.spawn) return failed()
+    it = engine.process.spawn({ argv })
     const split = lineSplitter()
     for (;;) {
       const r = await it.next()
