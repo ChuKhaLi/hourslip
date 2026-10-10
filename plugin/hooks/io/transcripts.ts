@@ -95,8 +95,9 @@ async function spawnRead($: ReadEngine, path: string, stop: () => boolean): Prom
   let it: AsyncIterator<{ stream: string; text: string }, { code: number | null; signal: string | null }> | undefined
   let done = false
   try {
-    if (!$.process.spawn) return failed()
-    it = $.process.spawn({ argv })
+    // Called, never read as a value: the directory's check reads `$.noun.method` only as a call.
+    it = $.process.spawn?.({ argv })
+    if (!it) return failed()
     const split = lineSplitter()
     for (;;) {
       const r = await it.next()

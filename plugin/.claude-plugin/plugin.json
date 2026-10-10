@@ -1,6 +1,6 @@
 {
   "name": "hourslip",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Billable hours from your Claude Code sessions, per client and ticket.",
   "author": {
     "name": "ChuKhaLi",

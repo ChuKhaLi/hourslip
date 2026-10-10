@@ -7,7 +7,7 @@ const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 export function toCsv(rows: string[][], locale: 'en' | 'vi'): string {
   const sep = locale === 'vi' ? ';' : ','
   const cell = (v: string) => (v.includes(sep) || v.includes('"') || v.includes('\n') || v.includes('\r') ? `"${v.replace(/"/g, '""')}"` : v)
-  return '﻿' + rows.map(r => r.map(cell).join(sep) + '\r\n').join('')
+  return '\uFEFF' + rows.map(r => r.map(cell).join(sep) + '\r\n').join('')
 }
 
 const hours = (minutes: number, locale: 'en' | 'vi') => {

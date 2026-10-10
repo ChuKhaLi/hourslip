@@ -1,5 +1,6 @@
 {
   "name": "hourslip",
   "owner": { "name": "ChuKhaLi" },
+  "metadata": { "description": "hourslip: billable hours per client and ticket from Claude Code sessions." },
   "plugins": [{ "name": "hourslip", "source": "./plugin", "description": "Billable hours from your Claude Code sessions, per client and ticket." }]
 }
