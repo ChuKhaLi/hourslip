@@ -9,10 +9,10 @@ import type { CommandEngine } from './paths.ts'
 
 export type MonthData = { from: string; to: string; ts: Timesheet; manual: ManualLine[]; notes: string[] }
 
-export async function monthData($: CommandEngine, home: string, rules: Rules, month: string): Promise<MonthData> {
+export async function monthData(engine: CommandEngine, home: string, rules: Rules, month: string): Promise<MonthData> {
   const { from, to } = monthBounds(month)
-  const { sessions, skipped } = await readSessions($, home, Date.parse(`${from}T00:00:00Z`) - 86_400_000)
-  const manualRead = await readManualStrict($, home)
+  const { sessions, skipped } = await readSessions(engine, home, Date.parse(`${from}T00:00:00Z`) - 86_400_000)
+  const manualRead = await readManualStrict(engine, home)
   const ts = buildTimesheet({ sessions, manual: manualRead.lines, rules, from, to })
   const notes: string[] = []
   if (skipped > 0) notes.push(`${skipped} unreadable event lines were skipped.`)
@@ -22,12 +22,12 @@ export async function monthData($: CommandEngine, home: string, rules: Rules, mo
 }
 
 /** One client's snapshot. Only that client's branches are asked for commits: another client's titles never reach it. */
-export async function snapshotFor($: CommandEngine, d: MonthData, rules: Rules, client: string, showCommits: boolean): Promise<{ snapshot: Snapshot; notes: string[] }> {
+export async function snapshotFor(engine: CommandEngine, d: MonthData, rules: Rules, client: string, showCommits: boolean): Promise<{ snapshot: Snapshot; notes: string[] }> {
   const notes: string[] = []
   let commits: Record<string, string[]> = {}
   if (showCommits) {
     const sources = d.ts.ticketSources.filter(s => s.client === client)
-    const r = await commitsFor($, sources, rules.author, d.from, d.to)
+    const r = await commitsFor(engine, sources, rules.author, d.from, d.to)
     commits = r.commits
     if (r.unavailable > 0) notes.push(`Commit titles were unavailable for ${r.unavailable} branch(es) (deleted branch, or not the CLI).`)
   }

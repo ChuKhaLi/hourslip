@@ -118,7 +118,7 @@ describe('/hourslip publish', () => {
     expect(out).toContain(`Published acme 2026-10 v1: https://r.hourslip.dev/r/${RID}`)
     expect(w.fetches.map(f => `${f.method} ${f.url}`)).toEqual(['POST https://r.hourslip.dev/keys/free', 'POST https://r.hourslip.dev/reports'])
     const sent = JSON.parse(w.fetches[1]!.body!)
-    expect(sent).toMatchObject({ v: 1, client: { name: 'ACME' }, period: { from: '2026-10-01', to: '2026-10-31' }, generator: { version: '0.3.4' } })
+    expect(sent).toMatchObject({ v: 1, client: { name: 'ACME' }, period: { from: '2026-10-01', to: '2026-10-31' }, generator: { version: '0.3.5' } })
     expect(w.copies).toEqual([`https://r.hourslip.dev/r/${RID}`])
     expect(w.toasts).toContain('Published acme 2026-10 v1 · link copied')
     // The test-side $ has no store: the entry is proven through unpublish, which only acts on a remembered report.

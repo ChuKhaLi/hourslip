@@ -71,19 +71,19 @@ export type ImportEngine = CommandEngine & {
 
 export const trim = (p: string) => p.replace(/\\/g, '/').replace(/\/+$/, '')
 
-export async function homeDir($: HomeEngine): Promise<string> {
-  const explicit = await $.env.hourslipHome()
+export async function homeDir(engine: HomeEngine): Promise<string> {
+  const explicit = await engine.env.hourslipHome()
   if (explicit) return trim(explicit)
-  const base = (await $.env.home()) || (await $.env.userProfile())
+  const base = (await engine.env.home()) || (await engine.env.userProfile())
   if (!base) throw new Error('hourslip: neither HOME nor USERPROFILE is set')
   return `${trim(base)}/.hourslip`
 }
 
 /** The Claude Code config dir: CLAUDE_CONFIG_DIR when set, else `<HOME or USERPROFILE>/.claude` (never HOURSLIP_HOME). */
-export async function claudeDir($: { env: Pick<EnvPort, 'home' | 'userProfile'> & { claudeConfigDir(): Promise<string | undefined> } }): Promise<string> {
-  const explicit = await $.env.claudeConfigDir()
+export async function claudeDir(engine: { env: Pick<EnvPort, 'home' | 'userProfile'> & { claudeConfigDir(): Promise<string | undefined> } }): Promise<string> {
+  const explicit = await engine.env.claudeConfigDir()
   if (explicit) return trim(explicit)
-  const base = (await $.env.home()) || (await $.env.userProfile())
+  const base = (await engine.env.home()) || (await engine.env.userProfile())
   if (!base) throw new Error('hourslip: neither HOME nor USERPROFILE is set')
   return `${trim(base)}/.claude`
 }

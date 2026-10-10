@@ -44,6 +44,9 @@ kind of event, the working folder, the git branch read from `.git/HEAD`, turn id
 `~/.hourslip/events/<session id>.jsonl` and redraws the status line. A hook never blocks or changes a
 turn, and never records prompt text, replies or file contents.
 
+It also hooks `command.run` for the `/hourslip` command only: that hook runs the command and returns its
+reply; no other command reaches it. `ui.render` draws the `/hourslip` pane.
+
 Every file hourslip writes is under `~/.hourslip` (or `HOURSLIP_HOME`): `events/`, `rules.json`,
 `manual.jsonl`, `exports/`, `previews/`, `imported/` and `import-cache/`. It never writes a build,
 start-up, settings or instructions file, and nothing it writes is run by another program.

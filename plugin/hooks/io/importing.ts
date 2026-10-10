@@ -17,8 +17,8 @@ type Ctx = { home: string; rules: Rules; today: string; tz: number }
 const SID = /^[A-Za-z0-9][A-Za-z0-9_-]*$/
 const billable = (r: { presenceMinutes: number; manualMinutes: number }) => r.presenceMinutes + r.manualMinutes
 
-async function names($: ImportEngine, dir: string): Promise<{ name: string; kind: string; size: number }[]> {
-  try { return await $.fs.list(dir) } catch { return [] }
+async function names(engine: ImportEngine, dir: string): Promise<{ name: string; kind: string; size: number }[]> {
+  try { return await engine.fs.list(dir) } catch { return [] }
 }
 
 /** `1 session`, `2 sessions`. */
@@ -81,11 +81,11 @@ type CacheRead = { files: Map<string, CacheEntry>; texts: string[]; parts: numbe
  * The index's entries for this key; missing, unreadable, malformed or for another key: none. A part that is
  * missing or broken loses only its own entries. `texts` is what was read (each part), `parts` how many files.
  */
-async function readCache($: ImportEngine, home: string, key: unknown): Promise<CacheRead> {
+async function readCache(engine: ImportEngine, home: string, key: unknown): Promise<CacheRead> {
   const files = new Map<string, CacheEntry>()
   const k = JSON.stringify(key)
   let text: string
-  try { text = await $.fs.read(indexPath(home)) } catch { return { files, texts: [], parts: 0 } }
+  try { text = await engine.fs.read(indexPath(home)) } catch { return { files, texts: [], parts: 0 } }
   const texts = [text]
   let more = 0
   try {
@@ -96,7 +96,7 @@ async function readCache($: ImportEngine, home: string, key: unknown): Promise<C
     take(o.files)
     for (let part = 1; part <= more; part++) {
       try {
-        const t = await $.fs.read(indexPath(home, part))
+        const t = await engine.fs.read(indexPath(home, part))
         texts.push(t)
         const p = JSON.parse(t)
         if (p && typeof p === 'object' && p.v === CACHE_V && JSON.stringify(p.key) === k && p.part === part && p.files && typeof p.files === 'object' && !Array.isArray(p.files)) take(p.files)
@@ -158,7 +158,7 @@ const isRecord = (o: any): o is TranscriptRecord => !!o && typeof o === 'object'
 const header = (file: TranscriptFile, part: number, parts: number) => JSON.stringify({ v: CACHE_V, path: file.path, size: file.size, mtimeMs: file.mtimeMs, part, parts })
 
 /** Writes a transcript's records, split so no file passes SHARD_MAX_BYTES: how many files, or why a write failed. */
-async function writeShard($: ImportEngine, home: string, shard: string, file: TranscriptFile, records: TranscriptRecord[]): Promise<number | string> {
+async function writeShard(engine: ImportEngine, home: string, shard: string, file: TranscriptFile, records: TranscriptRecord[]): Promise<number | string> {
   const room = SHARD_MAX_BYTES - utf8Bytes(header(file, 99_999, 99_999)) - 1
   const groups: string[][] = []
   let cur: string[] = []
@@ -172,7 +172,7 @@ async function writeShard($: ImportEngine, home: string, shard: string, file: Tr
   }
   if (cur.length > 0) groups.push(cur)
   try {
-    for (let i = 0; i < groups.length; i++) await $.fs.write(shardPath(home, shard, i + 1, groups.length), [header(file, i + 1, groups.length), ...groups[i]].join('\n') + '\n')
+    for (let i = 0; i < groups.length; i++) await engine.fs.write(shardPath(home, shard, i + 1, groups.length), [header(file, i + 1, groups.length), ...groups[i]].join('\n') + '\n')
   } catch (err) {
     return reason(err)
   }
@@ -180,12 +180,12 @@ async function writeShard($: ImportEngine, home: string, shard: string, file: Tr
 }
 
 /** A transcript's records from its records files, or null when any is missing, unreadable, malformed or another transcript's. */
-async function readShard($: ImportEngine, home: string, file: TranscriptFile, e: CacheEntry): Promise<TranscriptRecord[] | null> {
+async function readShard(engine: ImportEngine, home: string, file: TranscriptFile, e: CacheEntry): Promise<TranscriptRecord[] | null> {
   if (e.shard === null) return []
   const out: TranscriptRecord[] = []
   try {
     for (let part = 1; part <= e.parts; part++) {
-      const lines = (await $.fs.read(shardPath(home, e.shard, part, e.parts))).split('\n')
+      const lines = (await engine.fs.read(shardPath(home, e.shard, part, e.parts))).split('\n')
       if (lines[0] !== header(file, part, e.parts)) return null
       for (let i = 1; i < lines.length; i++) {
         if (lines[i] === '') continue
@@ -229,12 +229,12 @@ const reason = (err: unknown) => (err instanceof Error ? err.message : String(er
  * as it goes (records files after each transcript read, the index now and then and at the end), so a scan
  * stopped by the time limit keeps what it read; the preview reads the cache but writes nothing.
  */
-async function scan($: ImportEngine, ctx: Ctx, write: boolean): Promise<Scanned | Stopped> {
-  const left = () => $.budget?.() ?? Infinity
+async function scan(engine: ImportEngine, ctx: Ctx, write: boolean): Promise<Scanned | Stopped> {
+  const left = () => engine.budget?.() ?? Infinity
   const low = () => left() < STOP_MS
-  const recorded = new Set((await names($, `${ctx.home}/events`)).filter(e => e.kind === 'file').map(e => e.name))
+  const recorded = new Set((await names(engine, `${ctx.home}/events`)).filter(e => e.kind === 'file').map(e => e.name))
   const key = cacheKey(ctx.rules)
-  const cache = await readCache($, ctx.home, key)
+  const cache = await readCache(engine, ctx.home, key)
   // This run's view of the index; --confirm writes it back, less what is `unsaved` (a preview's reads, a
   // transcript whose records could not be written) and what is no longer listed.
   const entries = cache.files
@@ -243,7 +243,7 @@ async function scan($: ImportEngine, ctx: Ctx, write: boolean): Promise<Scanned 
   let indexParts = cache.parts
   let sinceFlush = 0
   let saveError: string | null = null
-  const transcripts = await findTranscripts($)
+  const transcripts = await findTranscripts(engine)
   const listed = new Set(transcripts.map(f => f.path))
   const shardOf = new Map<string, string>()
   for (const [path, e] of entries) if (e.shard !== null) shardOf.set(e.shard, path)
@@ -252,7 +252,7 @@ async function scan($: ImportEngine, ctx: Ctx, write: boolean): Promise<Scanned 
   const retired = new Set<string>()
   const retire = (e: CacheEntry | undefined) => { if (e) for (const p of shardFiles(ctx.home, e)) retired.add(p) }
   const save = async (path: string, text: string) => {
-    try { await $.fs.write(path, text); return true } catch (err) { saveError ??= reason(err); return false }
+    try { await engine.fs.write(path, text); return true } catch (err) { saveError ??= reason(err); return false }
   }
   const flush = async () => {
     if (!write) return
@@ -300,7 +300,7 @@ async function scan($: ImportEngine, ctx: Ctx, write: boolean): Promise<Scanned 
   const parse = async (f: TranscriptFile) => {
     if (low()) throw new OutOfTime()
     const first = parsed++ === 0
-    const r = await readTranscript($, f.path, () => left() < ABORT_MS)
+    const r = await readTranscript(engine, f.path, () => left() < ABORT_MS)
     if (!r.ok) {
       const old = entries.get(f.path)
       if (r.stopped && !first) throw new OutOfTime()
@@ -329,7 +329,7 @@ async function scan($: ImportEngine, ctx: Ctx, write: boolean): Promise<Scanned 
     if (records.length > 0) {
       let shard = shardName(f.path)
       for (let i = 1; shardOf.has(shard) && shardOf.get(shard) !== f.path; i++) shard = `${shardName(f.path)}-${i}`
-      const parts = await writeShard($, ctx.home, shard, f, records)
+      const parts = await writeShard(engine, ctx.home, shard, f, records)
       if (typeof parts === 'string') { saveError ??= parts; return }
       shardOf.set(shard, f.path)
       entry.shard = shard
@@ -343,7 +343,7 @@ async function scan($: ImportEngine, ctx: Ctx, write: boolean): Promise<Scanned 
     const have = inHand.get(f.path)
     if (have) return have
     if (low()) throw new OutOfTime()
-    const loaded = await readShard($, ctx.home, f, entries.get(f.path)!)
+    const loaded = await readShard(engine, ctx.home, f, entries.get(f.path)!)
     if (loaded) { inHand.set(f.path, loaded); return loaded }
     await parse(f)
     return inHand.get(f.path) ?? null
@@ -417,13 +417,13 @@ async function scan($: ImportEngine, ctx: Ctx, write: boolean): Promise<Scanned 
     // A prompt already in an imported file this run does not rewrite (its transcript since cleaned up, or not
     // readable here) stays there: a resumed copy of it is not imported again. Dropping prompts can leave a
     // session out, whose file then keeps its prompts too, so this runs until nothing more is taken.
-    const importedSids = (await names($, `${ctx.home}/imported`)).filter(e => e.kind === 'file' && e.name.endsWith('.jsonl') && e.size !== 0).map(e => e.name.slice(0, -'.jsonl'.length))
+    const importedSids = (await names(engine, `${ctx.home}/imported`)).filter(e => e.kind === 'file' && e.name.endsWith('.jsonl') && e.size !== 0).map(e => e.name.slice(0, -'.jsonl'.length))
     const held = new Map<string, string[]>()
     const heldBy = async (sid: string) => {
       let ids = held.get(sid)
       if (!ids) {
         // An imported file that cannot be read is skipped by every reader too: it holds nothing.
-        try { ids = parseEventLines(await $.fs.read(`${ctx.home}/imported/${sid}.jsonl`)).lines.flatMap(l => (l.turn !== undefined ? [l.turn] : [])) } catch { ids = [] }
+        try { ids = parseEventLines(await engine.fs.read(`${ctx.home}/imported/${sid}.jsonl`)).lines.flatMap(l => (l.turn !== undefined ? [l.turn] : [])) } catch { ids = [] }
         held.set(sid, ids)
       }
       return ids
@@ -465,8 +465,8 @@ function weeks(ts: Timesheet, rules: Rules, mondays: string[], notes: { skipped:
   return out
 }
 
-export async function importPreview($: ImportEngine, ctx: Ctx): Promise<ImportReply> {
-  const scanned = await scan($, ctx, false)
+export async function importPreview(engine: ImportEngine, ctx: Ctx): Promise<ImportReply> {
+  const scanned = await scan(engine, ctx, false)
   if (scanned.stopped) return { text: `Scanned ${scanned.scanned} of ${scanned.total} transcripts before Claude Code's time limit for a command. Nothing written yet. Run /hourslip import --confirm to scan in steps and import when done.`, openPane: false }
   const { sessions, noClient, skipped, ts } = scanned
   const first = ts.rows[0]?.date
@@ -497,27 +497,27 @@ export async function importPreview($: ImportEngine, ctx: Ctx): Promise<ImportRe
  * skip an old imported file without reading it (its mtime is the import's). A file imported earlier and not
  * found this time (its transcript since cleaned up) keeps its entry, or gets one from its own lines.
  */
-async function writeIndex($: ImportEngine, home: string, written: { sid: string; lines: EventLine[] }[]): Promise<void> {
-  const earlier = (await readImportedIndex($, home)) ?? new Map<string, number>()
+async function writeIndex(engine: ImportEngine, home: string, written: { sid: string; lines: EventLine[] }[]): Promise<void> {
+  const earlier = (await readImportedIndex(engine, home)) ?? new Map<string, number>()
   const now = new Map(written.map(s => [s.sid, lastMs(s.lines)]))
   const index = new Map<string, number>()
-  for (const e of await names($, `${home}/imported`)) {
+  for (const e of await names(engine, `${home}/imported`)) {
     if (e.kind !== 'file' || !e.name.endsWith('.jsonl') || e.size === 0) continue
     const sid = e.name.slice(0, -'.jsonl'.length)
     let ms = now.get(sid) ?? earlier.get(sid)
     if (ms === undefined) {
       // Not in the index: readers read such a file anyway, so a failure here only costs that.
-      try { ms = lastMs(parseEventLines(await $.fs.read(`${home}/imported/${e.name}`)).lines) } catch { continue }
+      try { ms = lastMs(parseEventLines(await engine.fs.read(`${home}/imported/${e.name}`)).lines) } catch { continue }
     }
     if (Number.isFinite(ms)) index.set(sid, ms)
   }
   for (const [sid, ms] of now) if (!index.has(sid) && Number.isFinite(ms)) index.set(sid, ms)
   const out = Object.fromEntries([...index].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
-  await $.fs.write(`${home}/imported/${IMPORTED_INDEX}`, JSON.stringify(out) + '\n')
+  await engine.fs.write(`${home}/imported/${IMPORTED_INDEX}`, JSON.stringify(out) + '\n')
 }
 
-export async function importConfirm($: ImportEngine, ctx: Ctx): Promise<ImportReply> {
-  const scanned = await scan($, ctx, true)
+export async function importConfirm(engine: ImportEngine, ctx: Ctx): Promise<ImportReply> {
+  const scanned = await scan(engine, ctx, true)
   // Stopped by the time limit: what it read is in the scan cache, and nothing is imported yet.
   if (scanned.stopped) {
     const text = scanned.all
@@ -531,21 +531,21 @@ export async function importConfirm($: ImportEngine, ctx: Ctx): Promise<ImportRe
   if (sessions.length === 0) return { text: say('Nothing to import.'), openPane: false }
   // Before any session file: the index without the sessions about to be written, so a write that fails
   // part way never leaves an entry older than a file already written (readers read a file it does not name).
-  const earlier = await readImportedIndex($, ctx.home)
+  const earlier = await readImportedIndex(engine, ctx.home)
   if (earlier && sessions.some(s => earlier.has(s.sid))) {
     const kept = Object.fromEntries([...earlier].filter(([sid]) => !sessions.some(s => s.sid === sid)).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
-    await $.fs.write(`${ctx.home}/imported/${IMPORTED_INDEX}`, JSON.stringify(kept) + '\n')
+    await engine.fs.write(`${ctx.home}/imported/${IMPORTED_INDEX}`, JSON.stringify(kept) + '\n')
   }
   // One whole file per session ($.fs.write replaces it): importing again replaces the earlier import.
-  for (const s of sessions) await $.fs.write(`${ctx.home}/imported/${s.sid}.jsonl`, s.lines.map(serializeLine).join('\n') + '\n')
-  await writeIndex($, ctx.home, sessions)
+  for (const s of sessions) await engine.fs.write(`${ctx.home}/imported/${s.sid}.jsonl`, s.lines.map(serializeLine).join('\n') + '\n')
+  await writeIndex(engine, ctx.home, sessions)
   const total = ts.rows.reduce((sum, r) => sum + billable(r), 0)
   const text = say(`Imported ${count(sessions.length, 'session')} (${formatMinutes(total)}). Reports mark these days "from Claude Code transcripts".`)
   // The pane: every week with imported time, read back as every reader reads it (recorded overlap, 12-hour cap);
   // left out when the hook's time runs low (the import is written, and the pane shows it anyway).
-  if (($.budget?.() ?? Infinity) < STOP_MS) return { text, openPane: false }
-  const read = await readSessions($, ctx.home, 0)
-  const manual = await readManual($, ctx.home)
+  if ((engine.budget?.() ?? Infinity) < STOP_MS) return { text, openPane: false }
+  const read = await readSessions(engine, ctx.home, 0)
+  const manual = await readManual(engine, ctx.home)
   const all = buildTimesheet({ sessions: read.sessions, manual: manual.lines, rules: ctx.rules, from: '0000-01-01', to: '9999-12-31' })
   const mondays = [...new Set(all.rows.filter(r => r.imported).map(r => mondayOf(r.date)))].sort()
   if (mondays.length === 0) return { text, openPane: false }
@@ -557,23 +557,23 @@ export async function importConfirm($: ImportEngine, ctx: Ctx): Promise<ImportRe
  * The engine's fs has no delete: each imported file is emptied, and every reader skips an empty one. The scan
  * cache goes too (its index written as {}, every records file emptied): it lists every session on this machine.
  */
-export async function importUndo($: ImportEngine, ctx: Pick<Ctx, 'home'>): Promise<ImportReply> {
+export async function importUndo(engine: ImportEngine, ctx: Pick<Ctx, 'home'>): Promise<ImportReply> {
   let removed = 0
-  const entries = await names($, `${ctx.home}/imported`)
+  const entries = await names(engine, `${ctx.home}/imported`)
   for (const e of entries) {
     if (e.kind !== 'file' || !e.name.endsWith('.jsonl') || e.size === 0) continue
-    await $.fs.write(`${ctx.home}/imported/${e.name}`, '')
+    await engine.fs.write(`${ctx.home}/imported/${e.name}`, '')
     removed++
   }
-  if (entries.length > 0) await $.fs.write(`${ctx.home}/imported/${IMPORTED_INDEX}`, '{}\n')
+  if (entries.length > 0) await engine.fs.write(`${ctx.home}/imported/${IMPORTED_INDEX}`, '{}\n')
   let cache = false
   for (const dir of [cacheDir(ctx.home), `${cacheDir(ctx.home)}/records`]) {
-    for (const e of await names($, dir)) {
+    for (const e of await names(engine, dir)) {
       if (e.kind !== 'file') continue
       const path = `${dir}/${e.name}`
       const empty = path === indexPath(ctx.home) ? '{}\n' : ''
       if (e.size === 0 || (empty !== '' && e.size === empty.length)) continue
-      await $.fs.write(path, empty)
+      await engine.fs.write(path, empty)
       cache = true
     }
   }
