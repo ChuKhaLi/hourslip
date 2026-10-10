@@ -7,6 +7,7 @@ import { renderReport } from '../core/report.ts'
 import { DEFAULT_RULES, clientName } from '../core/rules.ts'
 import { weekLines } from '../core/summary.ts'
 import { buildTimesheet } from '../core/timesheet.ts'
+import type { ClientRule } from '../core/types.ts'
 import { ReadError, appendManual, readManual, readRules, readRulesStrict, readSessions, writeRules } from './files.ts'
 import { monthData, snapshotFor } from './report-data.ts'
 import { importConfirm, importPreview, importUndo, type ImportReply } from './importing.ts'
@@ -100,8 +101,22 @@ async function run(engine: HourslipEngine, recorder: Recorder, args: string): Pr
     case 'client-add': {
       if (!r.ok) return { text: `${r.error}. Fix it first; hourslip will not overwrite it.`, openPane: false }
       if (known(cmd.id)) return { text: `Client ${cmd.id} already exists. Edit ${home}/rules.json to change it.`, openPane: false }
-      await writeRules(engine, home, { ...rules, clients: [...rules.clients, { id: cmd.id, name: cmd.name, paths: cmd.paths, rate: cmd.rate, ticketPattern: null }] })
-      return { text: `Added client ${cmd.id} (${cmd.name}) for ${cmd.paths.join(', ')}.`, openPane: false }
+      await writeRules(engine, home, { ...rules, clients: [...rules.clients, { id: cmd.id, name: cmd.name, paths: cmd.paths, rate: cmd.rate, ticketPattern: null, ...(cmd.repos.length ? { repos: cmd.repos } : {}) }] })
+      return { text: `Added client ${cmd.id} (${cmd.name}) for ${[...cmd.paths, ...cmd.repos].join(', ')}.`, openPane: false }
+    }
+    case 'client-path':
+    case 'client-repo': {
+      if (!r.ok) return { text: `${r.error}. Fix it first; hourslip will not overwrite it.`, openPane: false }
+      const client = rules.clients.find(c => c.id === cmd.id)
+      if (!client) return { text: `No client ${cmd.id}. Add it with /hourslip client add.`, openPane: false }
+      const value = cmd.kind === 'client-path' ? cmd.path : cmd.repo
+      const has = (cmd.kind === 'client-path' ? client.paths : client.repos ?? []).includes(value)
+      const next: ClientRule = has ? client
+        : cmd.kind === 'client-path' ? { ...client, paths: [...client.paths, value] }
+        : { ...client, repos: [...(client.repos ?? []), value] }
+      if (!has) await writeRules(engine, home, { ...rules, clients: rules.clients.map(c => c.id === cmd.id ? next : c) })
+      const list = (xs: string[] | undefined) => xs?.length ? xs.join(', ') : 'none'
+      return { text: `${has ? `${cmd.id} already has ${value}; nothing written.` : `Added ${value} to ${cmd.id}.`} Paths: ${list(next.paths)}. Repos: ${list(next.repos)}.`, openPane: false }
     }
     case 'export': {
       if (rulesBroken) return { text: rulesBroken, openPane: false }

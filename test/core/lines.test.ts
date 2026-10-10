@@ -24,6 +24,14 @@ describe('event lines', () => {
     const tag: EventLine = { ...ok, kind: 'tag', tag: { client: 'acme', ticket: null, scope: 'session' } }
     expect(parseEventLines(serializeLine(tag)).lines).toEqual([tag])
   })
+  test('keeps a well-formed repo and reads a line with a malformed one without it', () => {
+    const withRepo = { ...ok, repo: { root: 'F:/w', remote: 'https://github.com/a/b' } }
+    const bad = { ...ok, repo: { root: 3 } }
+    const { lines, skipped } = parseEventLines([JSON.stringify(withRepo), JSON.stringify(bad)].join('\n'))
+    expect(skipped).toBe(0)
+    expect(lines[0]).toEqual(withRepo)
+    expect('repo' in lines[1]).toBe(false)
+  })
 })
 
 describe('manual lines', () => {

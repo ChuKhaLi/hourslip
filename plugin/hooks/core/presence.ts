@@ -1,6 +1,6 @@
 import { localDate } from './dates.ts'
 import { attribute } from './rules.ts'
-import { GAP_MS, MIN_MS, PAD_MS, type Attribution, type EventLine, type Rules, type Tag, type TicketSource } from './types.ts'
+import { GAP_MS, MIN_MS, PAD_MS, type Attribution, type EventLine, type RepoRef, type Rules, type Tag, type TicketSource } from './types.ts'
 
 export type Piece = { start: number; end: number; date: string; client: string | null; ticket: string | null; imported?: boolean }
 export type TurnSpan = Piece
@@ -13,7 +13,7 @@ function attributePoints(sorted: EventLine[], rules: Rules): Point[] {
     const t = Date.parse(line.ts)
     let best: { t: number; tag: Tag } | null = null
     for (const g of tags) if ((g.tag.scope === 'session' || g.t <= t) && (!best || g.t >= best.t)) best = g
-    const attr = best ? { client: best.tag.client, ticket: best.tag.ticket } : attribute(rules, line.cwd, line.branch)
+    const attr = best ? { client: best.tag.client, ticket: best.tag.ticket } : attribute(rules, line.cwd, line.branch, line.repo)
     return { t, tz: line.tz, attr, line }
   })
 }
@@ -78,8 +78,8 @@ export function sessionPieces(lines: EventLine[], rules: Rules): { pieces: Piece
   return { pieces, turns, sources }
 }
 
-export function currentAttribution(lines: EventLine[], rules: Rules, cwd: string, branch: string | null, now: number): Attribution {
-  const probe: EventLine = { v: 1, ts: new Date(now).toISOString(), tz: 0, sid: '', kind: 'prompt', cwd, branch }
+export function currentAttribution(lines: EventLine[], rules: Rules, cwd: string, branch: string | null, now: number, repo: RepoRef | null = null): Attribution {
+  const probe: EventLine = { v: 1, ts: new Date(now).toISOString(), tz: 0, sid: '', kind: 'prompt', cwd, branch, ...(repo ? { repo } : {}) }
   const points = attributePoints([...lines, probe].sort(byTime), rules)
   return points[points.length - 1].attr
 }

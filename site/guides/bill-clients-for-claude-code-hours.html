@@ -62,7 +62,7 @@ Total duration (wall): 6h 33m 10s</pre>
     <p>The <code>Total cost</code> line is what the session's tokens cost, and “The figure is an estimate”. It says nothing about your hours.</p>
 
     <h2 id="hourslip">Hours, rate and invoice: hourslip</h2>
-    <p>hourslip is a Claude Code mod (a plugin of function hooks). It records when you send prompts and when Claude's turns start and end, with the folder and the git branch; the folder gives the client and the branch the ticket. <a href="/guides/track-time-in-claude-code">How it counts a stretch of work</a> is in the first guide. Every report it makes has three numbers:</p>
+    <p>hourslip is a Claude Code mod (a plugin of function hooks). It records when you send prompts and when Claude's turns start and end, with the folder, the git branch and the repository; the folder gives the client and the branch the ticket. <a href="/guides/track-time-in-claude-code">How it counts a stretch of work</a> is in the first guide. Every report it makes has three numbers:</p>
     <ul>
       <li><strong>Measured</strong>: the stretches built from your prompts and Claude's turns.</li>
       <li><strong>By hand</strong>: time you add, such as <code>/hourslip add 1h30 acme "Call with ACME" --ticket ACME-182</code> (<code>--date YYYY-MM-DD</code> for another day). Reports label it “added by hand”.</li>

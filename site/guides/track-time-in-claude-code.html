@@ -77,7 +77,7 @@ Usage by model:
     <p>A stopwatch, or any time tracker you start when you sit down and stop when you get up. It also counts what happens outside Claude Code: the call with the client, the testing in a browser. It knows only what you remember to start and stop, and you split it by client yourself.</p>
 
     <h2 id="hourslip">Hours per client and ticket: hourslip</h2>
-    <p>hourslip is a Claude Code mod (a plugin of function hooks) that records when you send prompts and when Claude's turns start and end, with the folder and the git branch; never prompt text or file contents. The folder gives the client (from paths you set) and the branch gives the ticket: <code>feat/ACME-182-login</code> gives <code>ACME-182</code>. It counts time like this:</p>
+    <p>hourslip is a Claude Code mod (a plugin of function hooks) that records when you send prompts and when Claude's turns start and end, with the folder, the git branch and the repository; never prompt text or file contents. The folder gives the client (from paths you set) and the branch gives the ticket: <code>feat/ACME-182-login</code> gives <code>ACME-182</code>. It counts time like this:</p>
     <ul>
       <li>A gap of more than 45 minutes between events ends a stretch of work.</li>
       <li>Each stretch runs from its first event to 10 minutes after its last (a 10-minute pad), or to the session's end if that comes first. A lone prompt counts 10 minutes.</li>
@@ -123,7 +123,7 @@ Usage by model:
     <figure class="term" role="img" aria-label="Two hourslip commands: the import preview finds three sessions for ACME Corp, 4h15 from 2026-09-15 to 2026-09-29, and writes nothing; the confirmed import writes them and says reports label those days.">
       <div class="term-bar">claude -p · sample transcripts</div>
       <pre class="term-body"><span class="term-dim">$ claude -p "/hourslip import"</span>
-hourslip: Found 3 sessions from 2026-09-15 to 2026-09-29: ACME Corp 4h15. 2 sessions in folders with no client (add one with /hourslip client add, then import again).
+hourslip: Found 3 sessions from 2026-09-15 to 2026-09-29: ACME Corp 4h15. 2 sessions in folders with no client (import goes by folder: give a client that folder with /hourslip client add --path or /hourslip client path, then import again).
 Nothing written yet. Import: /hourslip import --confirm
 Claude Code keeps transcripts 30 days by default (cleanupPeriodDays).
 

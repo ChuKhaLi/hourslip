@@ -14,6 +14,8 @@ function isEventLine(o: any): o is EventLine {
     if (!t || typeof t.client !== 'string' || (t.ticket !== null && typeof t.ticket !== 'string')) return false
     if (t.scope !== 'from-now' && t.scope !== 'session') return false
   }
+  // A repo that is not { root: text, remote: text or null } is dropped, not the line (spec §2).
+  if (o.repo !== undefined && !(o.repo && typeof o.repo.root === 'string' && (o.repo.remote === null || typeof o.repo.remote === 'string'))) delete o.repo
   return true
 }
 

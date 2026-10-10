@@ -37,6 +37,44 @@ describe('recorder', () => {
     const w = world(on, { branchHead: null })
     await $.prompt.submit({ text: 'x', wait: false, origin: { kind: 'composer' } })
     expect(linesOf(w.read(EVENTS))[0].branch).toBeNull()
+    expect('repo' in linesOf(w.read(EVENTS))[0]).toBe(false)
+  })
+  test('in a worktree: the worktree branch, and the repository without credentials', async ($, on) => {
+    const w = world(on, {
+      cwd: '/work/acme.worktrees/x',
+      repo: { root: '/work/acme', remote: 'https://user:tok@github.com/Acme/App.git' },
+      files: {
+        '/work/acme.worktrees/x/.git': 'gitdir: /work/acme/.git/worktrees/x\n',
+        '/work/acme/.git/worktrees/x/HEAD': 'ref: refs/heads/feature/ACME-7-x\n',
+        '/work/acme/.git/HEAD': 'ref: refs/heads/main\n',
+      },
+    })
+    await $.prompt.submit({ text: 'x', wait: false, origin: { kind: 'composer' } })
+    expect(linesOf(w.read(EVENTS))[0]).toMatchObject({ cwd: '/work/acme.worktrees/x', branch: 'feature/ACME-7-x', repo: { root: '/work/acme', remote: 'https://github.com/Acme/App.git' } })
+    expect(w.read(EVENTS)).not.toContain('tok')
+  })
+  test('a relative gitdir resolves against the worktree folder', async ($, on) => {
+    const w = world(on, {
+      cwd: '/work/wt/x',
+      repo: { root: '/work/acme', remote: null },
+      files: { '/work/wt/x/.git': 'gitdir: ../../acme/.git/worktrees/x\n', '/work/acme/.git/worktrees/x/HEAD': 'ref: refs/heads/feature/ACME-8\n' },
+    })
+    await $.prompt.submit({ text: 'x', wait: false, origin: { kind: 'composer' } })
+    expect(linesOf(w.read(EVENTS))[0].branch).toBe('feature/ACME-8')
+  })
+  test('from a subfolder, the walk up finds the repository HEAD', async ($, on) => {
+    const w = world(on, { cwd: '/work/acme/api/src', repo: { root: '/work/acme', remote: null }, files: { '/work/acme/.git/HEAD': 'ref: refs/heads/feat/ACME-9-y\n' } })
+    await $.prompt.submit({ text: 'x', wait: false, origin: { kind: 'composer' } })
+    expect(linesOf(w.read(EVENTS))[0].branch).toBe('feat/ACME-9-y')
+  })
+  test('a .git file whose HEAD is gone stops the walk: null, never an outer repository branch', async ($, on) => {
+    const w = world(on, {
+      cwd: '/work/outer/wt',
+      repo: { root: '/work/main', remote: null },
+      files: { '/work/outer/wt/.git': 'gitdir: /gone/x\n', '/work/outer/.git/HEAD': 'ref: refs/heads/outer-branch\n' },
+    })
+    await $.prompt.submit({ text: 'x', wait: false, origin: { kind: 'composer' } })
+    expect(linesOf(w.read(EVENTS))[0].branch).toBeNull()
   })
   test('a transient read error after a reload never truncates the session file', async ($, on) => {
     const earlier = JSON.stringify({ v: 1, ts: '2026-10-05T01:00:00.000Z', tz: 420, sid: 'sess-1', kind: 'prompt', cwd: '/work/acme/api', branch: null })

@@ -39,7 +39,9 @@ Usage:
   /hourslip                                   this week
   /hourslip tag <client> [ticket] [--session] attribute this session
   /hourslip add <1h30> <client> "<note>" [--date YYYY-MM-DD] [--ticket X]
-  /hourslip client add <id> "<name>" --path <glob> [--path <glob>] [--rate <amount> <CUR>]
+  /hourslip client add <id> "<name>" [--path <glob>]... [--repo <remote>]... [--rate <amount> <CUR>]
+  /hourslip client path <id> <glob>          add a folder to a client
+  /hourslip client repo <id> <remote>        add a repository (its origin URL) to a client
   /hourslip export [client] [YYYY-MM]
   /hourslip publish <client> [YYYY-MM] [--no-commits]   preview a report; add --confirm to publish it
   /hourslip unpublish <client> <YYYY-MM>     delete a published report (its link answers 410)

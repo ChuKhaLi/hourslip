@@ -59,4 +59,14 @@ describe('sessionPieces', () => {
     expect(currentAttribution(lines, rules, '/w/acme', 'feat/ACME-1', T0 + 20 * 60_000)).toEqual({ client: 'beta', ticket: 'B-9' })
     expect(currentAttribution([], rules, '/w/acme', 'feat/ACME-1', T0)).toEqual({ client: 'acme', ticket: 'ACME-1' })
   })
+  test('a session in a worktree outside the client folder counts through the recorded repo', () => {
+    const repoRules: Rules = { ...DEFAULT_RULES, clients: [{ id: 'acme', name: 'ACME', paths: ['/w/acme/**'], rate: null, ticketPattern: 'ACME-[0-9]+' }] }
+    const repo = { root: '/w/acme', remote: null }
+    const at = (min: number, kind: EventLine['kind']): EventLine => ({ v: 1, ts: new Date(T0 + min * 60_000).toISOString(), tz: 0, sid: 's', kind, cwd: '/w/acme.worktrees/x', branch: 'feature/ACME-7-x', repo })
+    const { pieces } = sessionPieces([at(0, 'prompt'), at(1, 'turn-start'), at(5, 'turn-end')], repoRules)
+    expect(pieces.length).toBeGreaterThan(0)
+    expect(pieces.every(p => p.client === 'acme' && p.ticket === 'ACME-7')).toBe(true)
+    expect(currentAttribution([], repoRules, '/w/acme.worktrees/x', 'feature/ACME-7-x', T0, repo)).toEqual({ client: 'acme', ticket: 'ACME-7' })
+    expect(currentAttribution([], repoRules, '/w/acme.worktrees/x', 'feature/ACME-7-x', T0)).toEqual({ client: null, ticket: null })
+  })
 })

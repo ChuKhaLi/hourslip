@@ -103,7 +103,7 @@ describe('/hourslip import', () => {
   test('a folder with no client is counted, not imported', async ($, on) => {
     const w = world(on, { files: { [`${H}/rules.json`]: RULES, [`${P}/F--work-acme/${SID}.jsonl`]: transcript(SID), [`${P}/F--work-other/${SID2}.jsonl`]: transcript(SID2, '2026-09-10', 'F:/work/other') } })
     expect(await run($, 'import')).toContain('Found 1 session from 2026-09-10 to 2026-09-10: ACME Corp')
-    expect(await run($, 'import')).toContain('1 session in folders with no client (add one with /hourslip client add, then import again).')
+    expect(await run($, 'import')).toContain('1 session in folders with no client (import goes by folder: give a client that folder with /hourslip client add --path or /hourslip client path, then import again).')
     await run($, 'import --confirm')
     expect(importedKeys(w)).toEqual([`${H}/imported/${SID}.jsonl`])
   })

@@ -2,6 +2,9 @@ export type EventKind = 'start' | 'prompt' | 'turn-start' | 'turn-end' | 'end' |
 export type TagScope = 'from-now' | 'session'
 export type Tag = { client: string; ticket: string | null; scope: TagScope }
 
+/** The repository a session runs in: the main working tree's root (also for a worktree), and `origin` without credentials. */
+export type RepoRef = { root: string; remote: string | null }
+
 export type EventLine = {
   v: 1
   ts: string
@@ -14,6 +17,7 @@ export type EventLine = {
   agent?: string
   tag?: Tag
   src?: 'transcript'
+  repo?: RepoRef
 }
 
 export type ManualLine = {
@@ -29,6 +33,8 @@ export type ClientRule = {
   id: string
   name: string
   paths: string[]
+  /** `origin` remote patterns (normalized globs, spec §5); absent in a rules.json that never named one. */
+  repos?: string[]
   rate: { amount: number; currency: string } | null
   ticketPattern: string | null
 }

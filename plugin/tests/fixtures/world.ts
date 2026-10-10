@@ -15,7 +15,7 @@ const MAX_READ = 4 * 1024 * 1024
 export type SpawnAnswer = (text: string, argv: string[]) => { pieces: string[]; code?: number | null }
 
 /** An in-memory disk under HOME=/home/dev, a fixed session, a clock at T0. */
-export function world(on: On, opts: { files?: Record<string, string>; cwd?: string; branchHead?: string | null; failWrites?: boolean; failWritesOnce?: boolean; busyReads?: number; failWritePattern?: RegExp; failWriteMessage?: string; gitThrows?: boolean; copyThrows?: boolean; copyRefused?: boolean; reportsStoreThrows?: boolean; storeSeed?: Record<string, unknown>; busyOnce?: RegExp; env?: Record<string, string>; now?: number; spawn?: SpawnAnswer; http?: (method: string, url: string, body: string | undefined, headers: Record<string, string>) => { status: number; body?: unknown; text?: string } } = {}) {
+export function world(on: On, opts: { files?: Record<string, string>; cwd?: string; branchHead?: string | null; repo?: { root: string; remote: string | null } | null;failWrites?: boolean; failWritesOnce?: boolean; busyReads?: number; failWritePattern?: RegExp; failWriteMessage?: string; gitThrows?: boolean; copyThrows?: boolean; copyRefused?: boolean; reportsStoreThrows?: boolean; storeSeed?: Record<string, unknown>; busyOnce?: RegExp; env?: Record<string, string>; now?: number; spawn?: SpawnAnswer; http?: (method: string, url: string, body: string | undefined, headers: Record<string, string>) => { status: number; body?: unknown; text?: string } } = {}) {
   const files = new Map<string, string>(Object.entries(opts.files ?? {}).map(([k, v]) => [norm(k), v]))
   let failOnce = opts.failWritesOnce ?? false
   let busy = opts.busyReads ?? 0
@@ -42,10 +42,11 @@ export function world(on: On, opts: { files?: Record<string, string>; cwd?: stri
     on('store.delete', (_$, e) => { kv.delete(e.key); return { value: undefined } })
   } else mock.store(on)
   const cwd = opts.cwd ?? '/work/acme/api'
-  if (opts.branchHead !== null) files.set(norm(`${cwd}/.git/HEAD`), opts.branchHead ?? 'ref: refs/heads/feat/ACME-182-login\n')
+  if (opts.branchHead !== null && opts.repo === undefined) files.set(norm(`${cwd}/.git/HEAD`), opts.branchHead ?? 'ref: refs/heads/feat/ACME-182-login\n')
   on('session.id', () => ({ value: 'sess-1' }))
   on('session.cwd', () => ({ value: cwd }))
-  on('session.repo', () => ({ value: opts.branchHead === null ? null : { root: cwd, remote: null, internal: false, name: null } }))
+  const repo = opts.repo !== undefined ? opts.repo : opts.branchHead === null ? null : { root: cwd, remote: null }
+  on('session.repo', () => ({ value: repo === null ? null : { ...repo, internal: false, name: null } }))
   // The disk as plain functions: the hooks below answer `$` with them, and engine() hands them to io code directly.
   const fsRead = (path: string) => {
     reads.push(norm(path))

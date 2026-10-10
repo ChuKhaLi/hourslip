@@ -5,7 +5,9 @@ export type Command =
   | { kind: 'tz' }
   | { kind: 'tag'; client: string; ticket: string | null; scope: 'from-now' | 'session' }
   | { kind: 'add'; minutes: number; client: string; note: string; date: string | null; ticket: string | null }
-  | { kind: 'client-add'; id: string; name: string; paths: string[]; rate: { amount: number; currency: string } | null }
+  | { kind: 'client-add'; id: string; name: string; paths: string[]; repos: string[]; rate: { amount: number; currency: string } | null }
+  | { kind: 'client-path'; id: string; path: string }
+  | { kind: 'client-repo'; id: string; repo: string }
   | { kind: 'export'; client: string | null; month: string | null }
   | { kind: 'publish'; client: string; month: string | null; confirm: boolean; showCommits: boolean }
   | { kind: 'unpublish'; client: string; month: string }
@@ -23,7 +25,9 @@ export const USAGE = [
   '  /hourslip                                   this week',
   '  /hourslip tag <client> [ticket] [--session] attribute this session',
   '  /hourslip add <1h30> <client> "<note>" [--date YYYY-MM-DD] [--ticket X]',
-  '  /hourslip client add <id> "<name>" --path <glob> [--path <glob>] [--rate <amount> <CUR>]',
+  '  /hourslip client add <id> "<name>" [--path <glob>]... [--repo <remote>]... [--rate <amount> <CUR>]',
+  '  /hourslip client path <id> <glob>          add a folder to a client',
+  '  /hourslip client repo <id> <remote>        add a repository (its origin URL) to a client',
   '  /hourslip export [client] [YYYY-MM]',
   '  /hourslip publish <client> [YYYY-MM] [--no-commits]   preview a report; add --confirm to publish it',
   '  /hourslip unpublish <client> <YYYY-MM>     delete a published report (its link answers 410)',
@@ -92,10 +96,12 @@ export function parseCommand(args: string): Command {
     return { kind: 'add', minutes, client: rest[1], note: rest[2], date, ticket }
   }
   if (verb === 'client' && rest[0] === 'add') {
-    const usage = 'Usage: /hourslip client add <id> "<name>" --path <glob> [--path <glob>] [--rate <amount> <CUR>]'
+    const usage = 'Usage: /hourslip client add <id> "<name>" [--path <glob>]... [--repo <remote>]... [--rate <amount> <CUR>]'
     const [, id, name] = rest
     const paths = opts.get('path') ?? []
-    if (!id || !name || paths.length === 0 || paths.some(p => p === '')) return err(usage)
+    const repos = opts.get('repo') ?? []
+    if (!id || !name || [...paths, ...repos].some(p => p === '')) return err(usage)
+    if (paths.length === 0 && repos.length === 0) return err('Give at least one --path or --repo.')
     if (!ID.test(id)) return err('A client id is lowercase letters, digits and dashes, like acme or acme-2.')
     let rate: { amount: number; currency: string } | null = null
     const r = opts.get('rate')
@@ -105,7 +111,12 @@ export function parseCommand(args: string): Command {
       if (!(amount >= 0) || !/^[A-Z]{3}$/.test(r[1])) return err('--rate is an amount and a currency, like --rate 40 USD.')
       rate = { amount, currency: r[1] }
     }
-    return { kind: 'client-add', id, name, paths, rate }
+    return { kind: 'client-add', id, name, paths, repos, rate }
+  }
+  if (verb === 'client' && (rest[0] === 'path' || rest[0] === 'repo')) {
+    const usage = rest[0] === 'path' ? 'Usage: /hourslip client path <id> <glob>' : 'Usage: /hourslip client repo <id> <remote>'
+    if (opts.size > 0 || rest.length !== 3 || !rest[1] || !rest[2]) return err(usage)
+    return rest[0] === 'path' ? { kind: 'client-path', id: rest[1], path: rest[2] } : { kind: 'client-repo', id: rest[1], repo: rest[2] }
   }
   if (verb === 'export') {
     const nonEmpty = rest.filter(t => t !== '')

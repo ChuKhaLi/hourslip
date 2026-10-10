@@ -28,6 +28,29 @@ describe('/hourslip', () => {
     expect(JSON.parse(w.read('/home/dev/.hourslip/rules.json')!).clients[0]).toEqual({ id: 'beta', name: 'Beta Ltd', paths: ['/work/beta/**'], rate: null, ticketPattern: null })
     expect((await run($, 'client add beta "Again" --path /x/**')).text).toMatch(/already exists/)
   })
+  test('client repo and client path add to an existing client and list what it has', async ($, on) => {
+    const w = world(on)
+    await run($, 'client add beta "Beta Ltd" --path /work/beta/**')
+    expect((await run($, 'client repo beta github.com/beta/*')).text).toBe('Added github.com/beta/* to beta. Paths: /work/beta/**. Repos: github.com/beta/*.')
+    expect((await run($, 'client path beta /work/beta.worktrees/**')).text).toBe('Added /work/beta.worktrees/** to beta. Paths: /work/beta/**, /work/beta.worktrees/**. Repos: github.com/beta/*.')
+    expect(JSON.parse(w.read('/home/dev/.hourslip/rules.json')!).clients[0]).toEqual({ id: 'beta', name: 'Beta Ltd', paths: ['/work/beta/**', '/work/beta.worktrees/**'], rate: null, ticketPattern: null, repos: ['github.com/beta/*'] })
+  })
+  test('client repo: an unknown id, and one already there, write nothing', async ($, on) => {
+    const w = world(on)
+    await run($, 'client add beta "Beta" --repo github.com/beta/app')
+    const before = w.read('/home/dev/.hourslip/rules.json')
+    expect((await run($, 'client repo gamma github.com/x/y')).text).toBe('No client gamma. Add it with /hourslip client add.')
+    expect((await run($, 'client repo beta github.com/beta/app')).text).toBe('beta already has github.com/beta/app; nothing written. Paths: none. Repos: github.com/beta/app.')
+    expect(w.read('/home/dev/.hourslip/rules.json')).toBe(before)
+  })
+  test('adding to one client leaves the others as written by 0.3.x (no repos: [])', async ($, on) => {
+    const old = JSON.stringify({ v: 1, clients: [{ id: 'a', name: 'A', paths: ['/a/**'] }, { id: 'b', name: 'B', paths: ['/b/**'] }] })
+    const w = world(on, { files: { '/home/dev/.hourslip/rules.json': old } })
+    await run($, 'client path a /a2/**')
+    const clients = JSON.parse(w.read('/home/dev/.hourslip/rules.json')!).clients
+    expect('repos' in clients[0]).toBe(false)
+    expect('repos' in clients[1]).toBe(false)
+  })
   test('export names the CSV that another program holds open, without repeating the prefix', async ($, on) => {
     // On a real host the rejection reads "hourslip: $.fs.write(<path>) failed: EBUSY"; the kit's deny reads "hourslip: $.fs.write: EBUSY".
     world(on, { files: { '/home/dev/.hourslip/rules.json': RULES }, failWritePattern: /days[.]csv$/, failWriteMessage: 'EBUSY' })

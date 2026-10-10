@@ -38,10 +38,26 @@ describe('parseCommand', () => {
     expect(parseCommand('add 1h acme "x" --ticket ""').kind).toBe('error')
   })
   test('client add', () => {
-    expect(parseCommand('client add acme "ACME Corp" --path F:/work/acme/** --path D:/acme/** --rate 40 USD')).toEqual({ kind: 'client-add', id: 'acme', name: 'ACME Corp', paths: ['F:/work/acme/**', 'D:/acme/**'], rate: { amount: 40, currency: 'USD' } })
+    expect(parseCommand('client add acme "ACME Corp" --path F:/work/acme/** --path D:/acme/** --rate 40 USD')).toEqual({ kind: 'client-add', id: 'acme', name: 'ACME Corp', paths: ['F:/work/acme/**', 'D:/acme/**'], repos: [], rate: { amount: 40, currency: 'USD' } })
     expect(parseCommand('client add acme "ACME"').kind).toBe('error')
     expect(parseCommand('client add Acme! "ACME" --path /w/**').kind).toBe('error')
     expect(parseCommand('client add acme "ACME" --path /w/** --rate "" USD').kind).toBe('error')
+  })
+  test('client add takes --repo, and needs a --path or a --repo', () => {
+    expect(parseCommand('client add acme "ACME" --repo github.com/acme/*')).toEqual({ kind: 'client-add', id: 'acme', name: 'ACME', paths: [], repos: ['github.com/acme/*'], rate: null })
+    expect(parseCommand('client add acme "ACME" --path /w/** --repo git@github.com:acme/app.git')).toMatchObject({ paths: ['/w/**'], repos: ['git@github.com:acme/app.git'] })
+    expect(parseCommand('client add acme "ACME"')).toEqual({ kind: 'error', message: 'Give at least one --path or --repo.' })
+    expect(parseCommand('client add acme "ACME" --repo ""').kind).toBe('error')
+  })
+  test('client path and client repo add one to an existing client', () => {
+    expect(parseCommand('client path acme "F:/work/acme.worktrees/**"')).toEqual({ kind: 'client-path', id: 'acme', path: 'F:/work/acme.worktrees/**' })
+    expect(parseCommand('client repo acme github.com/acme/app')).toEqual({ kind: 'client-repo', id: 'acme', repo: 'github.com/acme/app' })
+    expect(parseCommand('client path acme')).toEqual({ kind: 'error', message: 'Usage: /hourslip client path <id> <glob>' })
+    expect(parseCommand('client repo acme a b')).toEqual({ kind: 'error', message: 'Usage: /hourslip client repo <id> <remote>' })
+    expect(parseCommand('client repo acme x --rate 1 USD').kind).toBe('error')
+  })
+  test('USAGE names client path, client repo and --repo', () => {
+    for (const s of ['client path <id> <glob>', 'client repo <id> <remote>', '[--repo <remote>]']) expect(USAGE).toContain(s)
   })
   test('export', () => {
     expect(parseCommand('export')).toEqual({ kind: 'export', client: null, month: null })

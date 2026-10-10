@@ -1,27 +1,58 @@
 import { addDays } from '../core/dates.ts'
-import { parseHead } from '../core/rules.ts'
-import type { TicketSource } from '../core/types.ts'
+import { parseHead, stripCredentials } from '../core/rules.ts'
+import type { RepoRef, TicketSource } from '../core/types.ts'
 import type { BranchEngine, GitEngine } from './paths.ts'
 
 const isAbsolute = (p: string) => /^([A-Za-z]:)?[\\/]/.test(p)
+const slash = (p: string) => p.replace(/\\/g, '/').replace(/\/+$/, '')
+const parentOf = (p: string) => { const i = slash(p).lastIndexOf('/'); return i > 0 ? slash(p).slice(0, i) : null }
+const samePath = (a: string, b: string) => slash(a).toLowerCase() === slash(b).toLowerCase()
 
-export async function readBranch(engine: BranchEngine): Promise<string | null> {
-  const repo = await engine.session.repo()
-  if (!repo) return null
-  let gitDir = `${repo.root}/.git`
-  try {
-    return parseHead(await engine.fs.read(`${gitDir}/HEAD`))
-  } catch {
-    try {
-      const pointer = /^gitdir:\s*(.+)$/m.exec(await engine.fs.read(gitDir))
-      if (!pointer) return null
-      const target = pointer[1].trim()
-      gitDir = isAbsolute(target) ? target : `${repo.root}/${target}`
-      return parseHead(await engine.fs.read(`${gitDir}/HEAD`))
-    } catch {
-      return null
-    }
+/** `dir` joined with a relative path, `.` and `..` folded (a worktree's `.git` may say `gitdir: ../x`). */
+function joinPath(dir: string, rel: string): string {
+  const out = slash(dir).split('/')
+  for (const part of slash(rel).split('/')) {
+    if (part === '..') out.pop()
+    else if (part !== '.' && part !== '') out.push(part)
   }
+  return out.join('/')
+}
+
+/** The branch of the git folder at `dir`: a string or null when `dir` holds `.git`; undefined when it holds none. */
+async function headAt(engine: BranchEngine, dir: string): Promise<string | null | undefined> {
+  try {
+    return parseHead(await engine.fs.read(`${dir}/.git/HEAD`))
+  } catch { /* no .git folder here: maybe a worktree's .git file */ }
+  let pointer: string
+  try {
+    pointer = await engine.fs.read(`${dir}/.git`)
+  } catch {
+    return undefined
+  }
+  // A .git file ends the walk whatever it says: never fall through to an outer repository's branch.
+  const target = /^gitdir:\s*(.+)$/m.exec(pointer)?.[1].trim()
+  if (!target) return null
+  try {
+    return parseHead(await engine.fs.read(`${isAbsolute(target) ? slash(target) : joinPath(dir, target)}/HEAD`))
+  } catch {
+    return null
+  }
+}
+
+/** Where the session is: its folder, the branch checked out there (a worktree's own), and its repository. Reads only. */
+export async function readLocation(engine: BranchEngine): Promise<{ cwd: string; branch: string | null; repo: RepoRef | null }> {
+  const cwd = await engine.session.cwd()
+  const found = await engine.session.repo()
+  if (!found) return { cwd, branch: null, repo: null }
+  const repo: RepoRef = { root: found.root, remote: found.remote === null ? null : stripCredentials(found.remote) }
+  let dir: string | null = slash(cwd)
+  for (let depth = 0; dir !== null && depth < 64; depth++) {
+    const branch = await headAt(engine, dir)
+    if (branch !== undefined) return { cwd, branch, repo }
+    if (samePath(dir, found.root)) break
+    dir = parentOf(dir)
+  }
+  return { cwd, branch: null, repo }
 }
 
 /** Commit subjects per ticket from each recorded branch. CLI only: elsewhere every source is unavailable. */

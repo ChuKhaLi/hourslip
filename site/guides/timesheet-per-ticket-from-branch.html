@@ -60,7 +60,7 @@
     <p>The timesheet is then one row per day and ticket with the hours. It is only as good as the notes: a switch you forget to write down puts the time on the wrong ticket.</p>
 
     <h2 id="hourslip">The ticket read from the branch: hourslip</h2>
-    <p>hourslip is a Claude Code mod (a plugin of function hooks). Each time you send a prompt and each time Claude's turn starts or ends, it records the folder and the git branch, read from <code>.git/HEAD</code>. The folder gives the client, from the paths you set; the ticket is the first match of a pattern in the branch name. The default pattern is <code>[A-Z][A-Z0-9]+-T?\d+</code>: a capital letter, then capitals or digits, a dash, an optional T, then digits. So:</p>
+    <p>hourslip is a Claude Code mod (a plugin of function hooks). Each time you send a prompt and each time Claude's turn starts or ends, it records the folder, the git branch (read from <code>.git/HEAD</code>) and the repository. The folder gives the client, from the paths you set, and so does the repository for a worktree or a client named with <code>--repo</code>; the ticket is the first match of a pattern in the branch name. The default pattern is <code>[A-Z][A-Z0-9]+-T?\d+</code>: a capital letter, then capitals or digits, a dash, an optional T, then digits. So:</p>
     <ul>
       <li><code>feat/ACME-182-login</code> gives <code>ACME-182</code>, and <code>JRA-123-fix-login</code> gives <code>JRA-123</code>.</li>
       <li><code>fix-header-spacing</code> gives no ticket.</li>

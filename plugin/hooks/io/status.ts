@@ -4,7 +4,7 @@ import { DEFAULT_RULES } from '../core/rules.ts'
 import { statusText } from '../core/summary.ts'
 import { buildTimesheet } from '../core/timesheet.ts'
 import { readManual, readRules, readSessions } from './files.ts'
-import { readBranch } from './git.ts'
+import { readLocation } from './git.ts'
 import { homeDir, type StatusEngine } from './paths.ts'
 import type { Recorder } from './recorder.ts'
 
@@ -22,7 +22,8 @@ export async function refreshStatus(engine: StatusEngine, recorder: Recorder): P
     const manual = (await readManual(engine, home)).lines
     const ts = buildTimesheet({ sessions, manual, rules, from: today, to: today })
     const sid = await engine.session.id()
-    const attr = currentAttribution(recorder.sessionLines(sid), rules, await engine.session.cwd(), await readBranch(engine), now)
+    const here = await readLocation(engine)
+    const attr = currentAttribution(recorder.sessionLines(sid), rules, here.cwd, here.branch, now, here.repo)
     engine.ui.status(statusText(ts, rules, attr, today))
   } catch {
     // The status line is best effort; recording is what matters.

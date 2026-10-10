@@ -477,7 +477,7 @@ export async function importPreview(engine: ImportEngine, ctx: Ctx): Promise<Imp
   const parts: string[] = []
   if (sessions.length > 0 && first && last) parts.push(`Found ${count(sessions.length, 'session')} from ${first} to ${last}: ${order.map(c => `${clientName(ctx.rules, c)} ${formatMinutes(perClient.get(c)!)}`).join(', ')}.`)
   else parts.push('Found no sessions to import.')
-  if (noClient > 0) parts.push(`${count(noClient, 'session')} in folders with no client (add one with /hourslip client add, then import again).`)
+  if (noClient > 0) parts.push(`${count(noClient, 'session')} in folders with no client (import goes by folder: give a client that folder with /hourslip client add --path or /hourslip client path, then import again).`)
   const skippedText = skippedClause(skipped)
   if (skippedText) parts.push(skippedText)
   const out = [parts.join(' ')]

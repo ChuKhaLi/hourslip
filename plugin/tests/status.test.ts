@@ -29,6 +29,27 @@ describe('status line', () => {
     await $.session.start(SESSION)
     expect(w.statuses.at(-1)).toBe('⏱ unassigned · 0h00 today')
   })
+  test('in a worktree outside the client folder: the client and the worktree ticket', async ($, on) => {
+    const w = world(on, {
+      cwd: '/work/acme.worktrees/x',
+      repo: { root: '/work/acme', remote: null },
+      files: { '/home/dev/.hourslip/rules.json': RULES, '/work/acme.worktrees/x/.git': 'gitdir: /work/acme/.git/worktrees/x\n', '/work/acme/.git/worktrees/x/HEAD': 'ref: refs/heads/feature/ACME-7-x\n' },
+    })
+    await $.session.start(SESSION)
+    await $.prompt.submit(prompt)
+    expect(w.statuses.at(-1)).toBe('⏱ ACME · ACME-7 · 0h10 today')
+  })
+  test('a clone anywhere counts for the client that names its remote', async ($, on) => {
+    const rules = JSON.stringify({ v: 1, tzOffsetMinutes: 420, clients: [{ id: 'acme', name: 'ACME', paths: [], repos: ['github.com/acme/*'], ticketPattern: 'ACME-[0-9]+' }] })
+    const w = world(on, {
+      cwd: '/tmp/clone',
+      repo: { root: '/tmp/clone', remote: 'git@github.com:Acme/App.git' },
+      files: { '/home/dev/.hourslip/rules.json': rules, '/tmp/clone/.git/HEAD': 'ref: refs/heads/feat/ACME-3\n' },
+    })
+    await $.session.start(SESSION)
+    await $.prompt.submit(prompt)
+    expect(w.statuses.at(-1)).toBe('⏱ ACME · ACME-3 · 0h10 today')
+  })
   test('/hourslip add redraws the status line with the added time, before the next prompt', async ($, on) => {
     const w = world(on, { files: { '/home/dev/.hourslip/rules.json': RULES } })
     await $.session.start(SESSION)

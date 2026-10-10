@@ -1,7 +1,7 @@
 import { parseEventLines, serializeLine } from '../core/lines.ts'
 import type { EventKind, EventLine } from '../core/types.ts'
 import { readRules } from './files.ts'
-import { readBranch } from './git.ts'
+import { readLocation } from './git.ts'
 import { homeDir, type RecorderEngine } from './paths.ts'
 
 export type Recorder = {
@@ -38,7 +38,8 @@ export function createRecorder(): Recorder {
     }
     const rules = await readRules(engine, home)
     const tz = rules.ok && rules.rules.tzOffsetMinutes !== null ? rules.rules.tzOffsetMinutes : -new Date().getTimezoneOffset()
-    const line: EventLine = { v: 1, ts: new Date(await engine.clock.now()).toISOString(), tz, sid, kind, cwd: await engine.session.cwd(), branch: await readBranch(engine), ...extra }
+    const here = await readLocation(engine)
+    const line: EventLine = { v: 1, ts: new Date(await engine.clock.now()).toISOString(), tz, sid, kind, cwd: here.cwd, branch: here.branch, ...(here.repo ? { repo: here.repo } : {}), ...extra }
     const buffer = buffers.get(sid)!
     buffer.push(serializeLine(line))
     await engine.fs.write(path, buffer.join('\n') + '\n')

@@ -24,7 +24,7 @@ export type WriteEngine = { fs: { write(path: string, text: string): Promise<voi
 export type StrictReadEngine = { fs: { read(path: string): Promise<string>; exists(path: string): Promise<boolean> } }
 export type AppendEngine = { fs: { read(path: string): Promise<string>; exists(path: string): Promise<boolean>; write(path: string, text: string): Promise<void> } }
 export type SessionsEngine = { fs: { read(path: string): Promise<string>; list(path: string): Promise<FsEntry[]> } }
-export type BranchEngine = { session: Pick<SessionPort, 'repo'>; fs: { read(path: string): Promise<string> } }
+export type BranchEngine = { session: Pick<SessionPort, 'repo' | 'cwd'>; fs: { read(path: string): Promise<string> } }
 export type GitEngine = { process: ProcessPort }
 /** The recorder: env, session, clock and ui, and the session file (read, exists, write). */
 export type RecorderEngine = HomeEngine & {

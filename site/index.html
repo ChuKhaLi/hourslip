@@ -69,7 +69,7 @@ claude plugin install hourslip@hourslip</pre>
         <h2>How it works</h2>
         <ol class="steps">
           <li><span class="n">1</span><h3>Install</h3><p>Two commands in your terminal. hourslip is a Claude Code mod; mods are on by default in current Claude Code.</p></li>
-          <li><span class="n">2</span><h3>Name your clients once</h3><p><code>/hourslip client add acme "ACME Corp" --path "C:/work/acme/**"</code>. Time in that folder goes to ACME, and the ticket comes from your git branch, like <code>feature/ACME-182-login</code>.</p></li>
+          <li><span class="n">2</span><h3>Name your clients once</h3><p><code>/hourslip client add acme "ACME Corp" --path "C:/work/acme/**"</code>. Time in that folder goes to ACME, and so does time in any worktree of a repository there, and the ticket comes from your git branch, like <code>feature/ACME-182-login</code>.</p></li>
           <li><span class="n">3</span><h3>Send the month</h3><p><code>/hourslip export acme</code> writes CSV files and a report you can print to PDF. With Pro, <code>/hourslip publish acme</code> previews a report and <code>--confirm</code> gives you a link to send.</p></li>
         </ol>
         <p class="note">The status line shows today's time for the client and ticket you are working on.</p>
@@ -94,7 +94,7 @@ claude plugin install hourslip@hourslip</pre>
 
       <section id="records">
         <h2>What hourslip records</h2>
-        <p>When prompts and turns start and end, the folder you are in, and the git branch. Never your prompts, never file contents. If you run <code>/hourslip import</code>, it reads Claude Code's transcripts on your machine to find earlier session times, and keeps only the times, session ids, folder and branch, never prompt text. With <code>--confirm</code> it keeps them for every Claude Code session on this machine in <code>~/.hourslip/import-cache/</code>, so the next import is quick; <code>--undo</code> removes that too. It all stays in <code>~/.hourslip</code> on your machine until you press Publish.</p>
+        <p>When prompts and turns start and end, the folder you are in, the git branch, and the repository's main folder and <code>origin</code> address (never a password or token). Never your prompts, never file contents. If you run <code>/hourslip import</code>, it reads Claude Code's transcripts on your machine to find earlier session times, and keeps only the times, session ids, folder and branch, never prompt text. With <code>--confirm</code> it keeps them for every Claude Code session on this machine in <code>~/.hourslip/import-cache/</code>, so the next import is quick; <code>--undo</code> removes that too. It all stays in <code>~/.hourslip</code> on your machine until you press Publish.</p>
         <p class="honesty">Measured from Claude Code activity. Time outside Claude Code, such as meetings or manual testing, appears only where it was added by hand, and is labelled so.</p>
       </section>
 

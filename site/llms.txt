@@ -4,7 +4,7 @@
 
 ## What it records
 
-- When prompts and turns start and end, the working folder and the git branch. Never prompt text, never file contents. If you run /hourslip import, it reads Claude Code's transcripts on your machine to find earlier session times, and keeps only the times, session ids, folder and branch, never prompt text. With --confirm it keeps them for every Claude Code session on this machine in ~/.hourslip/import-cache/, so the next import is quick; --undo removes that too. Data stays in ~/.hourslip until the user presses Publish.
+- When prompts and turns start and end, the working folder, the git branch, and the repository's main folder and origin address (never a password or token). Never prompt text, never file contents. If you run /hourslip import, it reads Claude Code's transcripts on your machine to find earlier session times, and keeps only the times, session ids, folder and branch, never prompt text. With --confirm it keeps them for every Claude Code session on this machine in ~/.hourslip/import-cache/, so the next import is quick; --undo removes that too. Data stays in ~/.hourslip until the user presses Publish.
 - Hours are a lower bound: only time in Claude Code with the mod loaded, plus time the user adds by hand, which the report labels.
 
 ## Confirm

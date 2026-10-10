@@ -80,7 +80,7 @@ test('"Unlimited" is fair use with the server\'s caps written out, and the price
   }
 })
 test('legal pages carry the date and the facts the spec fixes', () => {
-  const updated: Record<string, string> = { 'terms.html': '6 October 2026', 'privacy.html': '8 October 2026', 'refunds.html': '5 October 2026' }
+  const updated: Record<string, string> = { 'terms.html': '6 October 2026', 'privacy.html': '10 October 2026', 'refunds.html': '5 October 2026' }
   for (const [p, d] of Object.entries(updated)) expect(read(p), p).toContain(`Last updated: ${d}`)
   const terms = read('terms.html')
   for (const s of ['ChuKhaLi, an individual developer', 'Dodo Payments is the merchant of record', 'FSL-1.1-MIT', 'laws of Vietnam', 'stays online for 2 years']) expect(terms, s).toContain(s)

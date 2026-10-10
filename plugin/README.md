@@ -25,7 +25,11 @@ Work in a folder that matches the path and the time goes to `acme`. A ticket is 
 - `/hourslip`: this week, in a pane; the status line shows today's total.
 - `/hourslip tag <client> [ticket] [--session]`: give this session to a client.
 - `/hourslip add <1h30> <client> "<note>" [--date YYYY-MM-DD] [--ticket X]`: time outside Claude Code, labelled as added by hand.
-- `/hourslip client add <id> "<name>" --path <glob> [--rate <amount> <CUR>]`: a client and its folders.
+- `/hourslip client add <id> "<name>" [--path <glob>]... [--repo <remote>]... [--rate <amount> <CUR>]`: a client,
+  its folders and its repositories. A folder also covers every git worktree of a repository inside it; `--repo`
+  names a repository by its `origin` URL wherever it is cloned (`github.com/acme/*` names an organization).
+- `/hourslip client path <id> <glob>`, `/hourslip client repo <id> <remote>`: add a folder or a repository to a
+  client. Time recorded before 0.4.0, and imported time, goes by folder only.
 - `/hourslip export [client] [YYYY-MM]`: CSVs and an HTML preview in `~/.hourslip/exports/`.
 - `/hourslip publish <client> [YYYY-MM] [--no-commits]`: a preview of the client report; sends nothing.
   Add `--confirm` to publish it as a link. The first two reports are free.
@@ -40,7 +44,8 @@ Work in a folder that matches the path and the time goes to `acme`. A ticket is 
 
 `hooks/register.tsx` registers function hooks on session start, prompt submit, turn start, turn
 complete and session end. Each appends one line (a timestamp, the timezone offset, the session id, the
-kind of event, the working folder, the git branch read from `.git/HEAD`, turn ids) to
+kind of event, the working folder, the git branch read from `.git/HEAD` (a worktree's own), the repository's main
+folder and its `origin` URL without any user name or token in it, turn ids) to
 `~/.hourslip/events/<session id>.jsonl` and redraws the status line. A hook never blocks or changes a
 turn, and never records prompt text, replies or file contents.
 

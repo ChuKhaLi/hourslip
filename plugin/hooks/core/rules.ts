@@ -1,4 +1,4 @@
-import { DEFAULT_TICKET_PATTERN, type Attribution, type ClientRule, type Rules } from './types.ts'
+import { DEFAULT_TICKET_PATTERN, type Attribution, type ClientRule, type RepoRef, type Rules } from './types.ts'
 
 export const DEFAULT_RULES: Rules = {
   v: 1,
@@ -56,13 +56,15 @@ export function parseRules(text: string): RulesResult {
     seen.add(c.id)
     if (typeof c.name !== 'string') return fail(`${at}.name must be text`)
     if (!Array.isArray(c.paths) || !c.paths.every((p: unknown) => typeof p === 'string')) return fail(`${at}.paths must be a list of text`)
+    const repos = c.repos ?? []
+    if (!Array.isArray(repos) || !repos.every((p: unknown) => typeof p === 'string')) return fail(`${at}.repos must be a list of text`)
     const rate = c.rate ?? null
     if (rate !== null && !(typeof rate.amount === 'number' && rate.amount >= 0 && Number.isFinite(rate.amount) && typeof rate.currency === 'string' && /^[A-Z]{3}$/.test(rate.currency))) {
       return fail(`${at}.rate must be { amount: a number >= 0, currency: three capital letters }`)
     }
     const tp = c.ticketPattern ?? null
     if (tp !== null && !validPattern(tp)) return fail(`${at}.ticketPattern is not a valid pattern`)
-    clients.push({ id: c.id, name: c.name, paths: c.paths, rate, ticketPattern: tp })
+    clients.push({ id: c.id, name: c.name, paths: c.paths, ...(repos.length ? { repos } : {}), rate, ticketPattern: tp })
   }
   return { ok: true, rules: { v: 1, business, ticketPattern, csv, author, tzOffsetMinutes: tz, clients } }
 }
@@ -90,8 +92,39 @@ export function matchPath(glob: string, cwd: string): boolean {
   return globToRegExp(glob, insensitive).test(norm(cwd))
 }
 
-export function attribute(rules: Rules, cwd: string, branch: string | null): Attribution {
-  const client = rules.clients.find(c => c.paths.some(g => matchPath(g, cwd)))
+const SCHEME = /^[a-z][a-z0-9+.-]*:\/\//i
+
+/** A remote URL without the user and password a URL may carry; scp form (`git@host:x`) is left as it is. */
+export function stripCredentials(url: string): string {
+  const scheme = SCHEME.exec(url)
+  if (!scheme) return url
+  return scheme[0] + url.slice(scheme[0].length).replace(/^[^@/]*@/, '')
+}
+
+/** One form for every way to write a remote: `host/owner/name` or a path, lower-case, without scheme, user, port or `.git`. */
+export function normalizeRemote(remote: string): string {
+  let s = remote.trim().replace(/\\/g, '/')
+  const scheme = SCHEME.exec(s)
+  if (scheme) {
+    s = s.slice(scheme[0].length).replace(/^[^@/]*@/, '').replace(/^([^/:]+):[0-9]+(?=\/|$)/, '$1')
+    // file:///C:/x leaves /C:/x: the drive is the start of the path.
+    s = s.replace(/^\/([A-Za-z]:\/)/, '$1')
+  } else {
+    // scp form `user@host:path` (the path may be absolute); a one-letter "host" is a Windows drive, not a host.
+    const scp = /^(?:[^@/]+@)?([^/:]+):(.+)$/.exec(s)
+    if (scp && scp[1].length > 1) s = `${scp[1]}/${scp[2].replace(/^\/+/, '')}`
+  }
+  return s.replace(/\/+$/, '').replace(/\.git$/i, '').replace(/\/+$/, '').toLowerCase()
+}
+
+export function matchRemote(pattern: string, remote: string): boolean {
+  return globToRegExp(normalizeRemote(pattern), false).test(normalizeRemote(remote))
+}
+
+export function attribute(rules: Rules, cwd: string, branch: string | null, repo?: RepoRef | null): Attribution {
+  const client = rules.clients.find(c =>
+    c.paths.some(g => matchPath(g, cwd) || (!!repo && matchPath(g, repo.root))) ||
+    (!!repo?.remote && (c.repos ?? []).some(p => matchRemote(p, repo.remote!))))
   if (!client) return { client: null, ticket: null }
   const pattern = new RegExp(client.ticketPattern ?? rules.ticketPattern)
   return { client: client.id, ticket: branch ? (pattern.exec(branch)?.[0] ?? null) : null }
