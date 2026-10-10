@@ -1,0 +1,44 @@
+# The plugin's checks on Linux, macOS and Windows. Published to the public mirror (ChuKhaLi/hourslip)
+# and run there. Weekly too: a new Claude Code release can break a plugin without any change here.
+# No login and no model call: every `claude -p` runs a /hourslip slash command.
+name: plugin-ci
+on:
+  push: { branches: [main] }
+  pull_request:
+  schedule: [{ cron: '17 3 * * 1' }]
+  workflow_dispatch:
+permissions: { contents: read }
+concurrency: { group: plugin-ci-${{ github.ref }}, cancel-in-progress: true }
+
+jobs:
+  plugin:
+    strategy:
+      fail-fast: false
+      matrix: { os: [ubuntu-latest, macos-latest, windows-latest] }
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - name: Install Claude Code
+        if: runner.os != 'Windows'
+        run: |
+          curl -fsSL https://claude.ai/install.sh | bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Install Claude Code (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          irm https://claude.ai/install.ps1 | iex
+          "$env:USERPROFILE\.local\bin" | Out-File -Append -Encoding utf8 $env:GITHUB_PATH
+      - run: claude --version
+      # validate + the kit tests. Not --typecheck: Claude Code writes the types the hooks are checked
+      # against only when an interactive session loads the mod (docs: "Get type definitions for your
+      # version"); there is no way to lay them here, so the typecheck stays a local step.
+      - run: node scripts/test-mod.mjs
+      - run: pnpm test:smoke

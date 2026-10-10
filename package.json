@@ -10,7 +10,8 @@
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json",
     "site:build": "node scripts/build-site.mjs",
-    "test:mod": "node scripts/test-mod.mjs --typecheck"
+    "test:mod": "node scripts/test-mod.mjs --typecheck",
+    "test:smoke": "node scripts/ci-smoke.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",
