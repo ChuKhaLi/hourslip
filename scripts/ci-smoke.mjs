@@ -10,8 +10,10 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const plugin = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'plugin')
-// realpath: macOS's tmpdir is /var/..., which git and the engine report as /private/var/...
-const root = realpathSync(mkdtempSync(join(tmpdir(), 'hourslip-smoke-')))
+// realpath, native: macOS's tmpdir is /var/..., which git and the engine report as /private/var/...; a
+// Windows runner's is an 8.3 short path (its user folder as RUNNER~1), under which Claude Code 2.1.296 reports a
+// worktree as its own repository root. People work under long paths, so the smoke does too.
+const root = realpathSync.native(mkdtempSync(join(tmpdir(), 'hourslip-smoke-')))
 const home = join(root, 'home')
 const config = join(root, 'claude')
 const repo = join(root, 'work', 'acme')
