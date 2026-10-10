@@ -1,5 +1,8 @@
 # hourslip
 
+[![plugin-ci](https://github.com/ChuKhaLi/hourslip/actions/workflows/plugin-ci.yml/badge.svg)](https://github.com/ChuKhaLi/hourslip/actions/workflows/plugin-ci.yml)
+Tested on Linux, macOS and Windows against the current Claude Code, weekly and on every release.
+
 Billable hours per client and ticket, measured from your Claude Code sessions. hourslip is a Claude
 Code mod (a plugin of function hooks). It records when you work, attributes the time to a client by
 the folder you are in and to a ticket by the git branch, and exports a timesheet as CSV plus an HTML
