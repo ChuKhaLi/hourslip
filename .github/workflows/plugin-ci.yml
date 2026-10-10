@@ -8,7 +8,9 @@ on:
   schedule: [{ cron: '17 3 * * 1' }]
   workflow_dispatch:
 permissions: { contents: read }
-concurrency: { group: plugin-ci-${{ github.ref }}, cancel-in-progress: true }
+concurrency:
+  group: plugin-ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   plugin:
